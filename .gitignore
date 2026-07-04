@@ -23,3 +23,13 @@ vue.log
 
 # Claude
 .claude/
+
+# === Java / Maven ===
+target/
+*.class
+*.log
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+
+# === OS ===
+Thumbs.db

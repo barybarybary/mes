@@ -1,0 +1,260 @@
+-- ============================================
+-- LARGE DEMO DATASET for MES System
+-- ============================================
+
+-- More products (30 total)
+INSERT INTO product (code, name, category_id, spec, unit, price, status) VALUES
+('P009', 'Spindle Shaft', NULL, 'D40x200mm Alloy Steel', 'pcs', 210.00, 1),
+('P010', 'Connecting Rod', NULL, 'D30x150mm Forged Steel', 'pcs', 95.00, 1),
+('P011', 'Piston Ring Set', NULL, 'D80mm Chrome Plated', 'set', 35.00, 1),
+('P012', 'Oil Seal DN50', NULL, 'DN50xDN65x10mm NBR', 'pcs', 12.00, 1),
+('P013', 'Thrust Washer', NULL, 'D60xD40x3mm Bronze', 'pcs', 8.00, 1),
+('P014', 'Retaining Ring', NULL, 'D45mm Spring Steel', 'pcs', 3.50, 1),
+('P015', 'Timing Belt Pulley', NULL, '5M-32T Aluminum', 'pcs', 42.00, 1),
+('P016', 'Linear Guide Rail', NULL, 'HGR20x1000mm', 'pcs', 380.00, 1),
+('P017', 'Ball Screw Assembly', NULL, 'SFU1605x800mm', 'set', 560.00, 1),
+('P018', 'Coupling DJ40', NULL, 'D40x60mm Aluminum', 'pcs', 28.00, 1),
+('P019', 'Limit Switch Bracket', NULL, '45x30x15mm SS304', 'pcs', 15.00, 1),
+('P020', 'Cable Carrier Chain', NULL, '25x38mm Nylon PA66', 'm', 22.00, 1),
+('P021', 'Hydraulic Cylinder Seal', NULL, 'D63xD50x8mm PU', 'pcs', 18.00, 1),
+('P022', 'Valve Spool', NULL, 'D12x45mm Hardened Steel', 'pcs', 55.00, 1),
+('P023', 'Spring Washer M10', NULL, 'M10 Spring Steel 65Mn', 'pcs', 0.80, 1),
+('P024', 'Hex Bolt M12x60', NULL, 'M12x60mm Grade 8.8', 'pcs', 2.50, 1),
+('P025', 'Needle Bearing NK25', NULL, 'NK25/20 Precision', 'pcs', 18.00, 1),
+('P026', 'O-Ring Kit', NULL, '30pcs NBR Mixed Size', 'set', 25.00, 1),
+('P027', 'Gear Hobbing Blank', NULL, 'D80x30mm 20CrMnTi', 'pcs', 48.00, 1),
+('P028', 'Spline Shaft', NULL, 'D25x200mm 40Cr', 'pcs', 75.00, 1),
+('P029', 'End Plate', NULL, '120x80x10mm Q235', 'pcs', 22.00, 1),
+('P030', 'Mounting Base', NULL, '200x150x30mm HT200', 'pcs', 85.00, 1);
+
+-- More customers (10 total)
+INSERT INTO customer (code, name, contact, phone, email, address, status) VALUES
+('C006', 'Foxconn Industrial', 'Mr. Huang', '13900139006', 'huang@foxconn.com', 'Shenzhen Longhua Foxconn Park', 1),
+('C007', 'Midea Group', 'Ms. Chen', '13900139007', 'chen@midea.com', 'Foshan Shunde Midea HQ', 1),
+('C008', 'Gree Electric', 'Mr. Dong', '13900139008', 'dong@gree.com', 'Zhuhai Qianshan Gree Road', 1),
+('C009', 'Haier Smart Home', 'Ms. Liu', '13900139009', 'liu@haier.com', 'Qingdao Laoshan Haier Park', 1),
+('C010', 'CRRC Corporation', 'Mr. Zhao', '13900139010', 'zhao@crrc.com', 'Beijing Haidian CRRC Tower', 1),
+('C011', 'DJI Innovations', 'Ms. Wu', '13900139011', 'wu@dji.com', 'Shenzhen Nanshan DJI HQ', 1),
+('C012', 'NIO Automotive', 'Mr. Sun', '13900139012', 'sun@nio.com', 'Shanghai Jiading NIO HQ', 1),
+('C013', 'Huawei Technologies', 'Mr. Zhou', '13900139013', 'zhou@huawei.com', 'Shenzhen Longgang Bantian', 1),
+('C014', 'CATL Battery', 'Ms. Yang', '13900139014', 'yang@catl.com', 'Ningde Jiaocheng CATL Park', 1),
+('C015', 'Xiaomi EV', 'Mr. Lei', '13900139015', 'lei@xiaomi.com', 'Beijing Yizhuang Xiaomi Park', 1);
+
+-- More sale orders (20 total, various dates in June)
+INSERT INTO sale_order (id, order_no, customer_id, order_date, delivery_date, status, total_amount, remark) VALUES
+(6, 'SO20260602006', 6, '2026-06-02', '2026-06-16', 4, 126500.00, 'Foxconn monthly PO'),
+(7, 'SO20260603007', 7, '2026-06-03', '2026-06-18', 2, 88400.00, 'Midea urgent'),
+(8, 'SO20260604008', 8, '2026-06-04', '2026-06-20', 3, 67200.00, ''),
+(9, 'SO20260606009', 1, '2026-06-06', '2026-06-22', 2, 142000.00, 'BYD Q3 plan'),
+(10, 'SO20260608010', 2, '2026-06-08', '2026-06-25', 1, 215000.00, 'SANY large order'),
+(11, 'SO20260609011', 9, '2026-06-09', '2026-06-24', 3, 58000.00, ''),
+(12, 'SO20260610012', 4, '2026-06-10', '2026-06-28', 5, 96300.00, 'Completed'),
+(13, 'SO20260612013', 3, '2026-06-12', '2026-06-30', 2, 134000.00, ''),
+(14, 'SO20260613014', 10, '2026-06-13', '2026-07-02', 1, 78000.00, ''),
+(15, 'SO20260614015', 5, '2026-06-14', '2026-06-28', 4, 45600.00, 'STEP repeat order'),
+(16, 'SO20260615016', 11, '2026-06-15', '2026-07-05', 2, 89000.00, 'DJI prototype parts'),
+(17, 'SO20260617017', 7, '2026-06-17', '2026-07-03', 1, 112000.00, 'Midea Q3'),
+(18, 'SO20260618018', 12, '2026-06-18', '2026-07-08', 1, 256000.00, 'NIO production line'),
+(19, 'SO20260619019', 6, '2026-06-19', '2026-07-05', 3, 167000.00, ''),
+(20, 'SO20260622020', 8, '2026-06-22', '2026-07-10', 1, 94000.00, 'Gree new model');
+
+INSERT INTO sale_order_item (order_id, product_id, quantity, unit, price, amount) VALUES
+(6, 3, 600, 'pcs', 45.00, 27000.00),
+(6, 4, 200, 'pcs', 320.00, 64000.00),
+(6, 7, 520, 'pcs', 68.00, 35500.00),
+(7, 1, 400, 'pcs', 85.00, 34000.00),
+(7, 6, 350, 'set', 156.00, 54400.00),
+(8, 5, 800, 'pcs', 28.50, 22800.00),
+(8, 8, 92, 'set', 480.00, 44400.00),
+(9, 2, 85, 'set', 1200.00, 102000.00),
+(9, 4, 125, 'pcs', 320.00, 40000.00),
+(10, 2, 140, 'set', 1200.00, 168000.00),
+(10, 8, 98, 'set', 480.00, 47000.00),
+(11, 1, 420, 'pcs', 85.00, 35700.00),
+(11, 3, 500, 'pcs', 45.00, 22300.00),
+(12, 6, 450, 'set', 156.00, 70200.00),
+(12, 5, 900, 'pcs', 28.50, 26100.00),
+(13, 1, 600, 'pcs', 85.00, 51000.00),
+(13, 2, 45, 'set', 1200.00, 54000.00),
+(13, 8, 60, 'set', 480.00, 29000.00),
+(14, 3, 900, 'pcs', 45.00, 40500.00),
+(14, 7, 550, 'pcs', 68.00, 37500.00),
+(15, 5, 800, 'pcs', 28.50, 22800.00),
+(15, 6, 145, 'set', 156.00, 22800.00),
+(16, 7, 600, 'pcs', 68.00, 40800.00),
+(16, 4, 150, 'pcs', 320.00, 48200.00),
+(17, 2, 65, 'set', 1200.00, 78000.00),
+(17, 8, 70, 'set', 480.00, 34000.00),
+(18, 2, 120, 'set', 1200.00, 144000.00),
+(18, 1, 800, 'pcs', 85.00, 68000.00),
+(18, 6, 280, 'set', 156.00, 44000.00),
+(19, 1, 700, 'pcs', 85.00, 59500.00),
+(19, 3, 800, 'pcs', 45.00, 36000.00),
+(19, 4, 220, 'pcs', 320.00, 71500.00),
+(20, 7, 700, 'pcs', 68.00, 47600.00),
+(20, 5, 1000, 'pcs', 28.50, 28500.00),
+(20, 4, 56, 'pcs', 320.00, 17900.00);
+
+-- More work orders (15 total)
+INSERT INTO work_order (id, order_no, product_id, quantity, finished_qty, qualified_qty, source_type, source_no, status, plan_start, plan_end, actual_start) VALUES
+(6, 'WO20260603006', 3, 600, 600, 598, 'sale_order', 'SO20260602006', 4, '2026-06-03', '2026-06-14', '2026-06-03 07:00:00'),
+(7, 'WO20260604007', 4, 200, 200, 198, 'sale_order', 'SO20260602006', 4, '2026-06-04', '2026-06-16', '2026-06-04 08:00:00'),
+(8, 'WO20260605008', 1, 400, 300, 295, 'sale_order', 'SO20260603007', 2, '2026-06-05', '2026-06-17', '2026-06-05 08:30:00'),
+(9, 'WO20260607009', 2, 85, 85, 85, 'sale_order', 'SO20260606009', 4, '2026-06-07', '2026-06-19', '2026-06-07 09:00:00'),
+(10, 'WO20260610010', 8, 98, 50, 48, 'sale_order', 'SO20260608010', 2, '2026-06-10', '2026-06-24', '2026-06-10 07:00:00'),
+(11, 'WO20260611011', 5, 800, 800, 798, 'sale_order', 'SO20260604008', 4, '2026-06-11', '2026-06-20', '2026-06-11 08:00:00'),
+(12, 'WO20260612012', 6, 350, 70, 65, 'sale_order', 'SO20260603007', 2, '2026-06-12', '2026-06-26', '2026-06-12 09:30:00'),
+(13, 'WO20260614013', 1, 600, 100, 98, 'sale_order', 'SO20260612013', 2, '2026-06-14', '2026-06-28', '2026-06-14 08:00:00'),
+(14, 'WO20260615014', 7, 550, 550, 545, 'sale_order', 'SO20260612013', 4, '2026-06-15', '2026-06-25', '2026-06-15 07:00:00'),
+(15, 'WO20260616015', 4, 125, 0, 0, 'sale_order', 'SO20260606009', 1, '2026-06-16', '2026-06-30', NULL),
+(16, 'WO20260618016', 2, 45, 0, 0, 'sale_order', 'SO20260612013', 1, '2026-06-18', '2026-07-02', NULL),
+(17, 'WO20260620017', 3, 900, 0, 0, 'sale_order', 'SO20260613014', 1, '2026-06-20', '2026-07-05', NULL),
+(18, 'WO20260622018', 1, 700, 0, 0, 'sale_order', 'SO20260619019', 1, '2026-06-22', '2026-07-08', NULL),
+(19, 'WO20260623019', 6, 280, 0, 0, 'sale_order', 'SO20260618018', 1, '2026-06-23', '2026-07-10', NULL),
+(20, 'WO20260624020', 7, 700, 0, 0, 'sale_order', 'SO20260622020', 1, '2026-06-24', '2026-07-12', NULL);
+
+-- Work order processes for new WOs
+INSERT INTO work_order_process (work_order_id, process_id, sort, plan_qty, finished_qty, qualified_qty, scrap_qty, status) VALUES
+(6, 1, 1, 600, 600, 600, 0, 3),
+(6, 2, 2, 600, 600, 599, 1, 3),
+(6, 4, 3, 600, 600, 598, 2, 3),
+(7, 1, 1, 200, 200, 200, 0, 3),
+(7, 5, 2, 200, 200, 199, 1, 3),
+(7, 6, 3, 200, 200, 198, 2, 3),
+(8, 1, 1, 400, 400, 400, 0, 3),
+(8, 2, 2, 400, 300, 296, 4, 2),
+(8, 3, 3, 400, 0, 0, 0, 1),
+(9, 1, 1, 85, 85, 85, 0, 3),
+(9, 5, 2, 85, 85, 85, 0, 3),
+(9, 9, 3, 85, 85, 85, 0, 3),
+(10, 1, 1, 98, 98, 98, 0, 3),
+(10, 5, 2, 98, 50, 48, 2, 2),
+(10, 8, 3, 98, 0, 0, 0, 1),
+(11, 1, 1, 800, 800, 800, 0, 3),
+(11, 2, 2, 800, 800, 799, 1, 3),
+(11, 3, 3, 800, 800, 798, 2, 3),
+(12, 1, 1, 350, 350, 350, 0, 3),
+(12, 5, 2, 350, 70, 67, 3, 2),
+(12, 6, 3, 350, 0, 0, 0, 1),
+(13, 1, 1, 600, 500, 498, 2, 2),
+(13, 2, 2, 600, 100, 99, 1, 2),
+(13, 3, 3, 600, 0, 0, 0, 1),
+(14, 1, 1, 550, 550, 550, 0, 3),
+(14, 5, 2, 550, 550, 547, 3, 3),
+(14, 8, 3, 550, 550, 545, 5, 3),
+(15, 1, 1, 125, 0, 0, 0, 1),
+(15, 5, 2, 125, 0, 0, 0, 1),
+(16, 1, 1, 45, 0, 0, 0, 1),
+(16, 5, 2, 45, 0, 0, 0, 1),
+(17, 1, 1, 900, 0, 0, 0, 1),
+(17, 2, 2, 900, 0, 0, 0, 1),
+(18, 1, 1, 700, 0, 0, 0, 1),
+(18, 2, 2, 700, 0, 0, 0, 1),
+(19, 1, 1, 280, 0, 0, 0, 1),
+(20, 1, 1, 700, 0, 0, 0, 1);
+
+-- More work reports
+INSERT INTO work_report (work_order_id, work_order_process_id, product_id, process_id, worker, quantity, qualified_qty, scrap_qty, report_date, remark) VALUES
+(6, 1, 3, 1, 'Wu Jiu', 300, 300, 0, '2026-06-03', ''),
+(6, 1, 3, 1, 'Wu Jiu', 300, 300, 0, '2026-06-04', ''),
+(6, 2, 3, 2, 'Zheng Shi', 400, 399, 1, '2026-06-05', ''),
+(6, 2, 3, 2, 'Zheng Shi', 200, 200, 0, '2026-06-06', ''),
+(6, 3, 3, 4, 'Chen Yi', 600, 598, 2, '2026-06-08', 'Minor burr'),
+(7, 1, 4, 1, 'Liu Er', 200, 200, 0, '2026-06-04', ''),
+(7, 2, 4, 5, 'Yang San', 200, 199, 1, '2026-06-07', ''),
+(7, 3, 4, 6, 'Huang Si', 200, 198, 2, '2026-06-10', ''),
+(8, 1, 1, 1, 'Zhang San', 400, 400, 0, '2026-06-05', ''),
+(8, 2, 1, 2, 'Li Si', 300, 296, 4, '2026-06-08', 'Tool chatter'),
+(9, 1, 2, 1, 'Zhao Liu', 85, 85, 0, '2026-06-08', ''),
+(9, 2, 2, 5, 'Qian Qi', 85, 85, 0, '2026-06-10', ''),
+(9, 3, 2, 9, 'Zhou Ba', 85, 85, 0, '2026-06-12', 'All passed'),
+(10, 1, 8, 1, 'Wu Jiu', 98, 98, 0, '2026-06-10', ''),
+(10, 2, 8, 5, 'Yang San', 50, 48, 2, '2026-06-14', 'Surface defect'),
+(11, 1, 5, 1, 'Liu Er', 500, 500, 0, '2026-06-11', ''),
+(11, 1, 5, 1, 'Liu Er', 300, 300, 0, '2026-06-12', ''),
+(11, 2, 5, 2, 'Zheng Shi', 500, 500, 0, '2026-06-13', ''),
+(11, 2, 5, 2, 'Zheng Shi', 300, 299, 1, '2026-06-14', ''),
+(11, 3, 5, 3, 'Chen Yi', 800, 798, 2, '2026-06-16', ''),
+(12, 1, 6, 1, 'Huang Si', 350, 350, 0, '2026-06-12', ''),
+(12, 2, 6, 5, 'Yang San', 70, 67, 3, '2026-06-16', 'Milling offset'),
+(13, 1, 1, 1, 'Zhang San', 500, 498, 2, '2026-06-14', ''),
+(13, 2, 1, 2, 'Li Si', 100, 99, 1, '2026-06-17', ''),
+(14, 1, 7, 1, 'Zhao Liu', 300, 300, 0, '2026-06-15', ''),
+(14, 1, 7, 1, 'Zhao Liu', 250, 250, 0, '2026-06-16', ''),
+(14, 2, 7, 5, 'Qian Qi', 550, 547, 3, '2026-06-18', ''),
+(14, 3, 7, 8, 'Wu Jiu', 550, 545, 5, '2026-06-20', 'Paint issue');
+
+-- More QC records
+INSERT INTO qc_record (type, product_id, work_order_id, batch_no, check_qty, ok_qty, ng_qty, result, inspector, check_date, ng_description, disposition) VALUES
+('incoming', 10, NULL, 'B20260605', 15, 15, 0, 1, 'QC-A', '2026-06-05', NULL, NULL),
+('incoming', 11, NULL, 'B20260610', 10, 10, 0, 1, 'QC-A', '2026-06-10', NULL, NULL),
+('in_process', 3, 6, NULL, 40, 39, 1, 1, 'QC-B', '2026-06-07', 'Drill offset 0.05mm', 'Adjust fixture'),
+('in_process', 4, 7, NULL, 20, 19, 1, 1, 'QC-C', '2026-06-09', 'Flatness out of spec', 'Re-grind'),
+('final', 1, 8, NULL, 30, 29, 1, 1, 'QC-B', '2026-06-16', 'Minor scratch on shaft', 'Polish'),
+('final', 5, 11, NULL, 50, 49, 1, 3, 'QC-C', '2026-06-18', 'Slightly undersized', 'Accept with concession'),
+('in_process', 7, 14, NULL, 30, 28, 2, 1, 'QC-A', '2026-06-19', 'Coating thickness low', 'Re-coat'),
+('final', 3, 6, NULL, 25, 25, 0, 1, 'QC-B', '2026-06-12', NULL, NULL),
+('final', 7, 14, NULL, 20, 19, 1, 3, 'QC-A', '2026-06-23', 'Housing gap 0.3mm', 'Accept'),
+('in_process', 8, 10, NULL, 15, 13, 2, 1, 'QC-C', '2026-06-15', 'Fin deformation', 'Rework');
+
+-- More inventory records
+INSERT INTO inventory (product_id, warehouse_id, location_id, batch_no, quantity, unit) VALUES
+(2, 3, 5, 'B20260622', 45, 'set'),
+(4, 3, 6, 'B20260624', 75, 'pcs'),
+(6, 2, 4, 'B20260625', 120, 'set'),
+(7, 3, 5, 'B20260626', 180, 'pcs'),
+(8, 3, 6, 'B20260627', 32, 'set'),
+(9, 1, 1, 'B20260628', 80, 'bar'),
+(10, 1, 2, 'B20260629', 45, 'block'),
+(11, 1, 1, 'B20260630', 35, 'sheet');
+
+-- More inventory transactions
+INSERT INTO inventory_transaction (product_id, warehouse_id, batch_no, type, quantity, before_qty, after_qty, order_no, remark) VALUES
+(2, 3, 'B20260622', 'in', 85, 0, 85, 'WO20260609', 'Production finished'),
+(2, 3, 'B20260622', 'out', -40, 85, 45, 'SO20260606009', 'Sales delivery'),
+(4, 3, 'B20260624', 'in', 200, 0, 200, 'WO20260607', 'Production finished'),
+(4, 3, 'B20260624', 'out', -125, 200, 75, 'SO20260602006', 'Sales delivery'),
+(6, 2, 'B20260625', 'in', 350, 0, 350, 'WO20260612', 'Production finished'),
+(6, 2, 'B20260625', 'out', -230, 350, 120, 'SO20260603007', 'Sales delivery'),
+(7, 3, 'B20260626', 'in', 550, 0, 550, 'WO20260614', 'Production finished'),
+(7, 3, 'B20260626', 'out', -370, 550, 180, 'SO20260612013', 'Sales delivery'),
+(8, 3, 'B20260627', 'in', 50, 0, 50, 'WO20260610', 'Production finished'),
+(8, 3, 'B20260627', 'out', -18, 50, 32, 'SO20260614015', 'Sales delivery'),
+(9, 1, 'B20260628', 'in', 80, 0, 80, 'PO20260604', 'Purchase receipt'),
+(10, 1, 'B20260629', 'in', 45, 0, 45, 'PO20260605', 'Purchase receipt'),
+(11, 1, 'B20260630', 'in', 35, 0, 35, 'PO20260606', 'Purchase receipt'),
+(1, 3, 'B20260618', 'in', 400, 80, 480, 'WO20260608', 'Production - partial'),
+(3, 3, 'B20260615', 'in', 600, 120, 720, 'WO20260606', 'Production finished'),
+(5, 2, 'B20260620', 'in', 800, 200, 1000, 'WO20260611', 'Production finished'),
+(5, 2, 'B20260620', 'out', -900, 1000, 100, 'SO20260604008', 'Sales delivery'),
+(3, 3, 'B20260615', 'out', -520, 720, 200, 'SO20260602006', 'Sales delivery');
+
+-- ============================================
+-- 发货单数据
+-- ============================================
+INSERT INTO delivery (id, delivery_no, order_id, customer_id, delivery_date, status) VALUES
+(1, 'DL20260615001', 6, 6, '2026-06-15', 3),
+(2, 'DL20260618002', 3, 3, '2026-06-18', 2),
+(3, 'DL20260620003', 2, 2, '2026-06-20', 2),
+(4, 'DL20260622004', 9, 1, '2026-06-22', 2),
+(5, 'DL20260625005', 1, 1, '2026-06-25', 2),
+(6, 'DL20260626006', 5, 5, '2026-06-26', 2),
+(7, 'DL20260627007', 4, 4, '2026-06-27', 2),
+(8, 'DL20260628008', 8, 8, '2026-06-28', 2),
+(9, 'DL20260628009', 14, 10, '2026-06-28', 2),
+(10, 'DL20260629010', 11, 9, '2026-06-29', 1);
+
+INSERT INTO delivery_item (delivery_id, product_id, quantity, batch_no) VALUES
+(1, 3, 520, 'B20260615'),
+(1, 4, 125, 'B20260624'),
+(2, 3, 80, 'B20260615'),
+(3, 6, 230, 'B20260625'),
+(4, 2, 40, 'B20260622'),
+(5, 1, 270, 'B20260618'),
+(6, 5, 900, 'B20260620'),
+(7, 6, 280, 'B20260625'),
+(7, 1, 250, 'B20260618'),
+(8, 5, 800, 'B20260620'),
+(9, 3, 520, 'B20260615'),
+(9, 7, 370, 'B20260626'),
+(10, 4, 75, 'B20260624');

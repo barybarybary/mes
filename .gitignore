@@ -1,7 +1,5 @@
 .DS_Store
 node_modules
-/dist
-
 
 # local env files
 .env.local
@@ -12,6 +10,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+vue.log
 
 # Editor directories and files
 .idea
@@ -21,3 +20,6 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+# Claude
+.claude/

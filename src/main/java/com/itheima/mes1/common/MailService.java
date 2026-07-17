@@ -14,16 +14,25 @@ import org.springframework.stereotype.Service;
 @Service
 public class MailService {
 
-    @Autowired
+    @Autowired(required = false)
     private JavaMailSender mailSender;
 
     @Value("${spring.mail.username}")
     private String from;
 
+    /** 邮件是否已配置 */
+    private boolean isConfigured() {
+        return mailSender != null && from != null && !from.isBlank();
+    }
+
     /**
      * 发送验证码邮件
      */
     public void sendVerifyCode(String to, String code) {
+        if (!isConfigured()) {
+            log.warn("邮件未配置，跳过发送验证码 to={}", to);
+            return;
+        }
         try {
             MimeMessage msg = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(msg, true, "UTF-8");
@@ -102,6 +111,10 @@ public class MailService {
 
     /** 发送通用 HTML 邮件 */
     public void sendHtml(String to, String subject, String html) {
+        if (!isConfigured()) {
+            log.warn("邮件未配置，跳过发送 subject={}", subject);
+            return;
+        }
         try {
             MimeMessage msg = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(msg, true, "UTF-8");
@@ -120,6 +133,10 @@ public class MailService {
     /** 发送带附件的 HTML 邮件 */
     public void sendHtmlWithAttachment(String to, String subject, String html,
                                         byte[] attachment, String filename) {
+        if (!isConfigured()) {
+            log.warn("邮件未配置，跳过发送附件邮件 subject={}", subject);
+            return;
+        }
         try {
             MimeMessage msg = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(msg, true, "UTF-8");

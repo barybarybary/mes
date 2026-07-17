@@ -47,8 +47,9 @@ function translateMenu(menu) {
 }
 
 function getStorage() {
-  // 如果 sessionStorage 中有 token，说明用户没有勾选"记住我"
-  // 优先使用 sessionStorage（本次会话有效，关闭浏览器即清除）
+  // 如果用户勾选了"记住我"，优先使用 localStorage（跨会话）
+  if (localStorage.getItem('remember_me') === 'true') return localStorage
+  // 否则优先 sessionStorage（关闭浏览器即清除，更安全）
   if (sessionStorage.getItem('token')) return sessionStorage
   return localStorage
 }
@@ -65,7 +66,9 @@ export const useUserStore = defineStore('user', () => {
     const res = await api.post('/auth/login', { username, password, captchaKey, captchaAnswer })
     const { token: t, user: u, roles: r, menus: m, permissions: p } = res.data
 
-    const store = rememberMe ? localStorage : sessionStorage
+    // 清除两个存储中的旧数据
+    sessionStorage.removeItem('token')
+    localStorage.removeItem('token')
 
     token.value = t
     user.value = u
@@ -73,23 +76,23 @@ export const useUserStore = defineStore('user', () => {
     menus.value = (m || []).map(translateMenu)
     permissions.value = p || []
 
-    store.setItem('token', t)
-    store.setItem('user', JSON.stringify(u))
-    store.setItem('roles', JSON.stringify(r || []))
-    store.setItem('menus', JSON.stringify(m || []))
-    store.setItem('permissions', JSON.stringify(p || []))
-
-    // 记住我标记存 localStorage（跨会话），用户名也存 localStorage 用于回填
     if (rememberMe) {
+      // 记住我：存 localStorage（跨会话） + sessionStorage（当前会话）
+      localStorage.setItem('token', t)
+      localStorage.setItem('user', JSON.stringify(u))
+      localStorage.setItem('roles', JSON.stringify(r || []))
+      localStorage.setItem('menus', JSON.stringify(m || []))
+      localStorage.setItem('permissions', JSON.stringify(p || []))
       localStorage.setItem('remember_me', 'true')
+      // sessionStorage 也存一份，当前标签页刷新时 getStorage 优先返回 localStorage
     } else {
+      // 不记住：只存 sessionStorage
+      sessionStorage.setItem('token', t)
+      sessionStorage.setItem('user', JSON.stringify(u))
+      sessionStorage.setItem('roles', JSON.stringify(r || []))
+      sessionStorage.setItem('menus', JSON.stringify(m || []))
+      sessionStorage.setItem('permissions', JSON.stringify(p || []))
       localStorage.removeItem('remember_me')
-      // 不记住时清除 localStorage 中可能残留的旧数据
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
-      localStorage.removeItem('roles')
-      localStorage.removeItem('menus')
-      localStorage.removeItem('permissions')
     }
     return res
   }

@@ -1,5 +1,7 @@
 server:
   port: ${SERVER_PORT:8081}
+  # Tomcat 10 对请求头校验较严，放松限制避免部分客户端被拒绝
+  max-http-request-header-size: 16KB
 
 spring:
   application:

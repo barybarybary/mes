@@ -71,8 +71,8 @@ spring:
   mail:
     host: smtp.163.com
     port: 465
-    username: ${MES_MAIL_USERNAME:}
-    password: ${MES_MAIL_PASSWORD:}
+    username: ${MES_MAIL_USERNAME:lbr13553867626@163.com}
+    password: ${MES_MAIL_PASSWORD:CWTWS94aisGeRYKf}
     protocol: smtp
     properties:
       mail:

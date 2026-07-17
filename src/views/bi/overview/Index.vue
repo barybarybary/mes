@@ -170,7 +170,7 @@ function getChart(el) {
 async function loadAll() {
   loading.value = true
   try {
-    const [summary, trend, turnover, rate] = await Promise.all([
+    const [summary, trend, turnoverRes, rate] = await Promise.all([
       api.get('/dashboard/summary'),
       api.get('/dashboard/sales-trend', { params: { days: 30 } }),
       api.get('/dashboard/inventory-turnover', { params: { days: 30 } }),
@@ -183,8 +183,8 @@ async function loadAll() {
       kpis[0].growth = d.salesGrowth || 0
       kpis[1].value = d.pendingOrders ?? 0
       kpis[1].growth = d.orderGrowth || 0
-      kpis[2].value = (turnover.data?.turnoverDays ?? 0) + '天'
-      kpis[2].growth = -(turnover.data?.daysGrowth || 0)
+      kpis[2].value = (turnoverRes.data?.turnoverDays ?? 0) + '天'
+      kpis[2].growth = -(turnoverRes.data?.daysGrowth || 0)
       kpis[3].value = (rate.data?.rate ?? 0) + '%'
       kpis[3].growth = rate.data?.rateGrowth || 0
 
@@ -240,12 +240,12 @@ async function loadAll() {
     }
 
     // 库存周转数据
-    if (turnover.code === 200) {
+    if (turnoverRes.code === 200) {
       Object.assign(turnover, {
-        outboundQty: Number(turnover.data.outboundQty || 0).toFixed(1),
-        inboundQty: Number(turnover.data.inboundQty || 0).toFixed(1),
-        avgStock: Number(turnover.data.avgStock || 0).toFixed(1),
-        turnoverDays: turnover.data.turnoverDays || 0
+        outboundQty: Number(turnoverRes.data.outboundQty || 0).toFixed(1),
+        inboundQty: Number(turnoverRes.data.inboundQty || 0).toFixed(1),
+        avgStock: Number(turnoverRes.data.avgStock || 0).toFixed(1),
+        turnoverDays: turnoverRes.data.turnoverDays || 0
       })
     }
 

@@ -3,9 +3,9 @@ package com.itheima.mes1.module.bi.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.itheima.mes1.common.PageResult;
+import com.itheima.mes1.common.mq.MessageSender;
 import com.itheima.mes1.module.bi.entity.BiAlertRecord;
 import com.itheima.mes1.module.bi.entity.BiAlertRule;
-import com.itheima.mes1.module.bi.controller.BiSseController;
 import com.itheima.mes1.module.bi.mapper.BiAlertRecordMapper;
 import com.itheima.mes1.module.bi.mapper.BiAlertRuleMapper;
 import com.itheima.mes1.module.bi.mapper.BiMapper;
@@ -24,6 +24,7 @@ public class BiAlertService {
     @Autowired private BiMapper biMapper;
     @Autowired private BiAlertRuleMapper ruleMapper;
     @Autowired private BiAlertRecordMapper recordMapper;
+    @Autowired private MessageSender messageSender;
 
     // ==================== 告警规则 CRUD ====================
 
@@ -102,8 +103,8 @@ public class BiAlertService {
                     "warning");
         }
 
-        // 广播未读数到所有 SSE 客户端
-        BiSseController.broadcast(unreadCount());
+        // 通过消息队列广播未读数到所有 SSE 客户端
+        messageSender.sendEvent("alert.scan", Map.of("unread", unreadCount()));
     }
 
     private void saveAlert(String category, String title, String content, String level) {

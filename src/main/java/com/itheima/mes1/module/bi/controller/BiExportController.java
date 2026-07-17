@@ -1,11 +1,13 @@
 package com.itheima.mes1.module.bi.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.itheima.mes1.common.Result;
 import com.itheima.mes1.common.annotation.RequirePermission;
 import com.itheima.mes1.module.bi.entity.BiReportConfig;
 import com.itheima.mes1.module.bi.mapper.BiReportConfigMapper;
 import com.itheima.mes1.module.bi.service.BiExportService;
+import com.itheima.mes1.module.bi.service.BiScheduleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Tag(name = "BI报表导出")
@@ -26,6 +29,7 @@ public class BiExportController {
 
     @Autowired private BiExportService exportService;
     @Autowired private BiReportConfigMapper configMapper;
+    @Autowired private BiScheduleService scheduleService;
 
     @RequirePermission("bi:export")
     @Operation(summary = "导出销售报表")
@@ -93,6 +97,24 @@ public class BiExportController {
     public Result<?> deleteSchedule(@PathVariable Long id) {
         configMapper.deleteById(id);
         return Result.ok();
+    }
+
+    @Operation(summary = "手动触发定时报表检查（测试用）")
+    @PostMapping("/schedule/trigger")
+    public Result<?> triggerSchedule() {
+        // 重置所有启用报表的 lastRunTime 到昨天，确保当天可重复触发
+        configMapper.update(null, new UpdateWrapper<BiReportConfig>()
+                .eq("status", 1)
+                .set("last_run_time", LocalDate.now().minusDays(1).atStartOfDay()));
+        scheduleService.checkScheduledReports();
+        return Result.ok("定时报表检查已触发");
+    }
+
+    @Operation(summary = "手动触发告警扫描（测试用）")
+    @PostMapping("/alert/trigger")
+    public Result<?> triggerAlert() {
+        scheduleService.autoAlertScan();
+        return Result.ok("告警扫描已触发");
     }
 
     private ResponseEntity<byte[]> buildResponse(byte[] data, String filename) {

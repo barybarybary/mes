@@ -41,6 +41,31 @@ spring:
           max-idle: 8
           min-idle: 0
 
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: mes1
+    password: mes1pass
+    virtual-host: /
+    # 连接超时 — 避免 RabbitMQ 不可用时阻塞启动
+    connection-timeout: 3000
+    # 发布端确认（可靠投递）
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
+    # 消费端手动确认
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 5
+        retry:
+          enabled: true
+          initial-interval: 2000ms
+          max-attempts: 3
+          multiplier: 2
+        default-requeue-rejected: false
+
   mail:
     host: smtp.163.com
     port: 465

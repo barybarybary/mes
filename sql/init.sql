@@ -517,3 +517,20 @@ INSERT INTO sys_menu (id, parent_id, name, type, path, component, icon, permissi
 
 INSERT INTO sys_role_menu (role_id, menu_id)
 SELECT 1, id FROM sys_menu WHERE id >= 9 AND id < 100;
+
+-- ============================================
+-- 9. 操作日志表（审计追踪）
+-- ============================================
+CREATE TABLE operation_log (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    operator_id BIGINT COMMENT '操作人ID',
+    operation VARCHAR(50) NOT NULL COMMENT '操作类型: CREATE/UPDATE/DELETE/LOGIN/EXPORT',
+    target_type VARCHAR(50) COMMENT '目标类型: WorkOrder/SaleOrder/Product',
+    target_id BIGINT COMMENT '目标ID',
+    detail TEXT COMMENT '变更详情(JSON)',
+    ip VARCHAR(50) COMMENT '客户端IP',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_operator (operator_id),
+    INDEX idx_target (target_type, target_id),
+    INDEX idx_create_time (create_time)
+) COMMENT '操作日志';

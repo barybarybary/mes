@@ -2,9 +2,8 @@ package com.itheima.mes1.module.bi.service;
 
 import cn.hutool.poi.excel.ExcelUtil;
 import cn.hutool.poi.excel.ExcelWriter;
+import cn.hutool.poi.excel.StyleSet;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.itheima.mes1.module.bi.entity.BiReportConfig;
-import com.itheima.mes1.module.bi.mapper.BiMapper;
 import com.itheima.mes1.module.inventory.entity.Inventory;
 import com.itheima.mes1.module.inventory.mapper.InventoryMapper;
 import com.itheima.mes1.module.production.entity.WorkOrder;
@@ -12,6 +11,7 @@ import com.itheima.mes1.module.production.mapper.WorkOrderMapper;
 import com.itheima.mes1.module.sale.entity.SaleOrder;
 import com.itheima.mes1.module.sale.mapper.SaleOrderItemMapper;
 import com.itheima.mes1.module.sale.mapper.SaleOrderMapper;
+import org.apache.poi.ss.usermodel.Sheet;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -23,7 +23,6 @@ import java.util.*;
 @Service
 public class BiExportService {
 
-    @Autowired private BiMapper biMapper;
     @Autowired private SaleOrderMapper saleOrderMapper;
     @Autowired private SaleOrderItemMapper saleOrderItemMapper;
     @Autowired private InventoryMapper inventoryMapper;
@@ -31,16 +30,16 @@ public class BiExportService {
 
     /** 销售报表 Excel */
     public byte[] exportSalesExcel(Integer year, Integer month) {
-        int y = year != null ? year : LocalDate.now().getYear();
-        int m = month != null ? month : LocalDate.now().getMonthValue();
-        LocalDateTime start = LocalDate.of(y, m, 1).atStartOfDay();
-        LocalDateTime end = start.plusMonths(1);
+        LambdaQueryWrapper<SaleOrder> qw = new LambdaQueryWrapper<SaleOrder>()
+                .orderByDesc(SaleOrder::getCreateTime);
 
-        List<SaleOrder> orders = saleOrderMapper.selectList(
-                new LambdaQueryWrapper<SaleOrder>()
-                        .ge(SaleOrder::getCreateTime, start)
-                        .lt(SaleOrder::getCreateTime, end)
-                        .orderByDesc(SaleOrder::getCreateTime));
+        if (year != null && month != null) {
+            LocalDateTime start = LocalDate.of(year, month, 1).atStartOfDay();
+            LocalDateTime end = start.plusMonths(1);
+            qw.ge(SaleOrder::getCreateTime, start).lt(SaleOrder::getCreateTime, end);
+        }
+
+        List<SaleOrder> orders = saleOrderMapper.selectList(qw);
 
         try (ExcelWriter writer = ExcelUtil.getWriter(true)) {
             writer.addHeaderAlias("orderNo", "订单号");
@@ -56,13 +55,23 @@ public class BiExportService {
                 Map<String, Object> row = new LinkedHashMap<>();
                 row.put("orderNo", o.getOrderNo());
                 row.put("customerName", full != null ? full.getCustomerName() : "");
-                row.put("orderDate", o.getOrderDate());
-                row.put("deliveryDate", o.getDeliveryDate());
+                row.put("orderDate", o.getOrderDate() != null ? o.getOrderDate().toString() : "");
+                row.put("deliveryDate", o.getDeliveryDate() != null ? o.getDeliveryDate().toString() : "");
                 row.put("totalAmount", o.getTotalAmount());
                 row.put("status", statusName(o.getStatus()));
                 rows.add(row);
             }
             writer.write(rows, true);
+
+            // 设置列宽
+            Sheet sheet = writer.getSheet();
+            sheet.setColumnWidth(0, 5000);   // 订单号
+            sheet.setColumnWidth(1, 6000);   // 客户
+            sheet.setColumnWidth(2, 4000);   // 订单日期
+            sheet.setColumnWidth(3, 4000);   // 交期
+            sheet.setColumnWidth(4, 4000);   // 金额
+            sheet.setColumnWidth(5, 3000);   // 状态
+
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             writer.flush(out);
             return out.toByteArray();
@@ -92,6 +101,15 @@ public class BiExportService {
                 rows.add(row);
             }
             writer.write(rows, true);
+
+            Sheet sheet = writer.getSheet();
+            sheet.setColumnWidth(0, 4500);
+            sheet.setColumnWidth(1, 7000);
+            sheet.setColumnWidth(2, 4500);
+            sheet.setColumnWidth(3, 4500);
+            sheet.setColumnWidth(4, 3500);
+            sheet.setColumnWidth(5, 3000);
+
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             writer.flush(out);
             return out.toByteArray();
@@ -100,16 +118,16 @@ public class BiExportService {
 
     /** 生产报表 Excel */
     public byte[] exportProductionExcel(Integer year, Integer month) {
-        int y = year != null ? year : LocalDate.now().getYear();
-        int m = month != null ? month : LocalDate.now().getMonthValue();
-        LocalDateTime start = LocalDate.of(y, m, 1).atStartOfDay();
-        LocalDateTime end = start.plusMonths(1);
+        LambdaQueryWrapper<WorkOrder> qw = new LambdaQueryWrapper<WorkOrder>()
+                .orderByDesc(WorkOrder::getCreateTime);
 
-        List<WorkOrder> orders = workOrderMapper.selectList(
-                new LambdaQueryWrapper<WorkOrder>()
-                        .ge(WorkOrder::getCreateTime, start)
-                        .lt(WorkOrder::getCreateTime, end)
-                        .orderByDesc(WorkOrder::getCreateTime));
+        if (year != null && month != null) {
+            LocalDateTime start = LocalDate.of(year, month, 1).atStartOfDay();
+            LocalDateTime end = start.plusMonths(1);
+            qw.ge(WorkOrder::getCreateTime, start).lt(WorkOrder::getCreateTime, end);
+        }
+
+        List<WorkOrder> orders = workOrderMapper.selectList(qw);
 
         try (ExcelWriter writer = ExcelUtil.getWriter(true)) {
             writer.addHeaderAlias("orderNo", "工单号");
@@ -134,6 +152,16 @@ public class BiExportService {
                 rows.add(row);
             }
             writer.write(rows, true);
+
+            Sheet sheet = writer.getSheet();
+            sheet.setColumnWidth(0, 5000);
+            sheet.setColumnWidth(1, 6000);
+            sheet.setColumnWidth(2, 3500);
+            sheet.setColumnWidth(3, 3500);
+            sheet.setColumnWidth(4, 3500);
+            sheet.setColumnWidth(5, 3500);
+            sheet.setColumnWidth(6, 3000);
+
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             writer.flush(out);
             return out.toByteArray();

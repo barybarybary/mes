@@ -97,7 +97,11 @@ public class AuthController {
     @Operation(summary = "获取当前用户信息")
     @GetMapping("/user-info")
     public Result<Map<String, Object>> userInfo(@RequestHeader("Authorization") String token) {
-        Long userId = (Long) redisTemplate.opsForValue().get("token:" + token.replace("Bearer ", ""));
+        Object userIdObj = redisTemplate.opsForValue().get("token:" + token.replace("Bearer ", ""));
+        if (userIdObj == null) {
+            return Result.fail(401, "Token 已过期，请重新登录");
+        }
+        Long userId = ((Number) userIdObj).longValue();
         SysUser user = userService.getById(userId);
         if (user != null) user.setPassword(null);
         List<SysMenu> menus = menuService.listByUserId(userId);

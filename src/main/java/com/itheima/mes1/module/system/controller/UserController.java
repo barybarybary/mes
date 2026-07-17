@@ -25,14 +25,28 @@ public class UserController {
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
 
+    @Operation(summary = "获取个人资料")
+    @GetMapping("/profile")
+    public Result<SysUser> getProfile(@RequestHeader("Authorization") String token) {
+        Object userIdObj = redisTemplate.opsForValue().get("token:" + token.replace("Bearer ", ""));
+        if (userIdObj == null) {
+            return Result.fail("未登录或登录已过期");
+        }
+        Long userId = ((Number) userIdObj).longValue();
+        SysUser user = userService.getById(userId);
+        if (user != null) user.setPassword(null);
+        return Result.ok(user);
+    }
+
     @Operation(summary = "更新个人资料")
     @PutMapping("/profile")
     public Result<?> updateProfile(@RequestHeader("Authorization") String token,
                                    @RequestBody Map<String, String> body) {
-        Long userId = (Long) redisTemplate.opsForValue().get("token:" + token.replace("Bearer ", ""));
-        if (userId == null) {
+        Object userIdObj = redisTemplate.opsForValue().get("token:" + token.replace("Bearer ", ""));
+        if (userIdObj == null) {
             return Result.fail("未登录或登录已过期");
         }
+        Long userId = ((Number) userIdObj).longValue();
         SysUser user = userService.getById(userId);
         if (user == null) {
             return Result.fail("用户不存在");
@@ -61,10 +75,11 @@ public class UserController {
     @PutMapping("/password")
     public Result<?> changePassword(@RequestHeader("Authorization") String token,
                                     @RequestBody Map<String, String> body) {
-        Long userId = (Long) redisTemplate.opsForValue().get("token:" + token.replace("Bearer ", ""));
-        if (userId == null) {
+        Object userIdObj = redisTemplate.opsForValue().get("token:" + token.replace("Bearer ", ""));
+        if (userIdObj == null) {
             return Result.fail("未登录或登录已过期");
         }
+        Long userId = ((Number) userIdObj).longValue();
         SysUser user = userService.getById(userId);
         if (user == null) {
             return Result.fail("用户不存在");

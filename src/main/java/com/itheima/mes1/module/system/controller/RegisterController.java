@@ -3,7 +3,7 @@ package com.itheima.mes1.module.system.controller;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.itheima.mes1.common.MailService;
+import com.itheima.mes1.common.mq.MessageSender;
 import com.itheima.mes1.common.Result;
 import com.itheima.mes1.module.system.entity.SysUser;
 import com.itheima.mes1.module.system.entity.SysUserRole;
@@ -30,7 +30,7 @@ public class RegisterController {
     @Autowired
     private SysUserService userService;
     @Autowired
-    private MailService mailService;
+    private MessageSender messageSender;
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
     @Autowired
@@ -89,9 +89,9 @@ public class RegisterController {
         // 发送间隔限制 60 秒
         redisTemplate.opsForValue().set(lastKey, "1", 60, TimeUnit.SECONDS);
 
-        // 发送邮件
+        // 异步发送邮件（通过消息队列）
         log.info("邮箱验证码: email={}, code={}", email, code);
-        mailService.sendVerifyCode(email, code);
+        messageSender.sendVerifyCodeMail(email, code);
 
         return Result.ok("验证码已发送，请查收邮件");
     }

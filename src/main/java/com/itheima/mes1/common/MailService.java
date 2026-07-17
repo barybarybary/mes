@@ -2,6 +2,7 @@ package com.itheima.mes1.common;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.util.ByteArrayDataSource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -113,6 +114,29 @@ public class MailService {
         } catch (MessagingException e) {
             log.error("邮件发送失败: {}", e.getMessage());
             throw new RuntimeException("邮件发送失败: " + e.getMessage());
+        }
+    }
+
+    /** 发送带附件的 HTML 邮件 */
+    public void sendHtmlWithAttachment(String to, String subject, String html,
+                                        byte[] attachment, String filename) {
+        try {
+            MimeMessage msg = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(msg, true, "UTF-8");
+            helper.setFrom(from);
+            helper.setTo(to.split(","));
+            helper.setSubject(subject);
+            helper.setText(html, true);
+
+            ByteArrayDataSource ds = new ByteArrayDataSource(attachment,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            helper.addAttachment(filename, ds);
+
+            mailSender.send(msg);
+            log.info("带附件邮件已发送至 {} filename={}", to, filename);
+        } catch (MessagingException e) {
+            log.error("带附件邮件发送失败: {}", e.getMessage());
+            throw new RuntimeException("带附件邮件发送失败: " + e.getMessage());
         }
     }
 }

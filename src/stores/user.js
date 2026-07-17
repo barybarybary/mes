@@ -77,14 +77,16 @@ export const useUserStore = defineStore('user', () => {
     permissions.value = p || []
 
     if (rememberMe) {
-      // 记住我：存 localStorage（跨会话） + sessionStorage（当前会话）
-      localStorage.setItem('token', t)
-      localStorage.setItem('user', JSON.stringify(u))
-      localStorage.setItem('roles', JSON.stringify(r || []))
-      localStorage.setItem('menus', JSON.stringify(m || []))
-      localStorage.setItem('permissions', JSON.stringify(p || []))
+      // 记住我：localStorage 持久化 + sessionStorage 当前会话
+      const save = function(s, k, v) { s.setItem(k, v) }
+      ;[localStorage, sessionStorage].forEach(function(s) {
+        save(s, 'token', t)
+        save(s, 'user', JSON.stringify(u))
+        save(s, 'roles', JSON.stringify(r || []))
+        save(s, 'menus', JSON.stringify(m || []))
+        save(s, 'permissions', JSON.stringify(p || []))
+      })
       localStorage.setItem('remember_me', 'true')
-      // sessionStorage 也存一份，当前标签页刷新时 getStorage 优先返回 localStorage
     } else {
       // 不记住：只存 sessionStorage
       sessionStorage.setItem('token', t)

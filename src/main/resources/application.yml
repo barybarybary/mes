@@ -118,8 +118,11 @@ management:
 # 日志配置
 logging:
   level:
-    root: WARN
+    root: INFO
     com.itheima.mes1: INFO
+    # 抑制 RabbitMQ/Druid 的连接重试噪音
+    org.springframework.amqp.rabbit: WARN
+    com.alibaba.druid: WARN
   file:
     name: logs/mes1.log
     max-size: 100MB

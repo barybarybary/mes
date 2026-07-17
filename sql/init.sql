@@ -487,6 +487,7 @@ CREATE TABLE bi_alert_rule (
 CREATE TABLE bi_alert_record (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     rule_id BIGINT COMMENT '关联规则',
+    category VARCHAR(50) COMMENT '分类: stock/order/quality',
     title VARCHAR(200) COMMENT '告警标题',
     content TEXT COMMENT '告警详情',
     level VARCHAR(20),

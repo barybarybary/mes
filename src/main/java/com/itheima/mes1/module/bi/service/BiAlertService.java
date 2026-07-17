@@ -116,6 +116,7 @@ public class BiAlertService {
         if (exists > 0) return;
 
         BiAlertRecord record = new BiAlertRecord();
+        record.setCategory(category);
         record.setTitle(title);
         record.setContent(content);
         record.setLevel(level);

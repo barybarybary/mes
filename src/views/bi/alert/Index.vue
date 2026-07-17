@@ -44,25 +44,29 @@
         </el-table-column>
         <el-table-column prop="category" label="分类" width="110" align="center">
           <template #default="{ row }">
-            <el-tag type="info" effect="light" round size="small">{{ row.category }}</el-tag>
+            <el-tag v-if="row.category === 'order'" type="danger" effect="light" round size="small">订单</el-tag>
+            <el-tag v-else-if="row.category === 'stock'" type="warning" effect="light" round size="small">库存</el-tag>
+            <el-tag v-else-if="row.category === 'quality'" type="primary" effect="light" round size="small">质量</el-tag>
+            <el-tag v-else type="info" effect="light" round size="small">{{ row.category || '其他' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="title" label="预警内容" min-width="280" show-overflow-tooltip>
+        <el-table-column prop="title" label="预警标题" min-width="160" show-overflow-tooltip>
           <template #default="{ row }"><span class="font-medium text-slate-700 dark:text-slate-200">{{ row.title }}</span></template>
         </el-table-column>
-        <el-table-column prop="detail" label="详情" min-width="200" show-overflow-tooltip>
-          <template #default="{ row }"><span class="text-sm text-slate-500">{{ row.detail }}</span></template>
+        <el-table-column prop="content" label="详情" min-width="260" show-overflow-tooltip>
+          <template #default="{ row }"><span class="text-sm text-slate-500">{{ row.content }}</span></template>
         </el-table-column>
-        <el-table-column prop="threshold" label="阈值" width="120" align="center">
+        <el-table-column prop="createTime" label="触发时间" width="170" />
+        <el-table-column label="状态" width="90" align="center">
           <template #default="{ row }">
-            <span class="text-sm text-slate-500">{{ row.currentValue }} / {{ row.threshold }}</span>
+            <el-tag v-if="row.isRead === 0" type="danger" round size="small">未处理</el-tag>
+            <el-tag v-else type="success" round size="small">已处理</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="time" label="触发时间" width="170" />
-        <el-table-column label="操作" width="120" align="center">
+        <el-table-column label="操作" width="100" align="center">
           <template #default="{ row }">
-            <button v-if="row.status === 'active'" class="action-link warning" @click="ack(row)">确认</button>
-            <span v-else class="text-xs text-slate-400">已处理</span>
+            <button v-if="row.isRead === 0" class="action-link warning" @click="ack(row)">确认</button>
+            <span v-else class="text-xs text-slate-400">—</span>
           </template>
         </el-table-column>
       </el-table>
@@ -97,12 +101,31 @@ async function fetchData() {
     })
     if (res.code === 200) {
       const data = res.data
-      alerts.value = data?.list || []
+      alerts.value = (data?.list || []).map(function(r) {
+        return {
+          id: r.id,
+          category: r.category || '',
+          title: r.title || '',
+          content: r.content || '',
+          level: r.level || 'info',
+          isRead: r.isRead !== undefined ? r.isRead : 0,
+          createTime: r.createTime || ''
+        }
+      })
       total.value = data?.total || 0
+
+      // 统计各类别数量
+      const allRecords = alerts.value
+      stats[0].value = allRecords.filter(function(a) { return a.level === 'critical' }).length
+      stats[1].value = allRecords.filter(function(a) { return a.level === 'warning' }).length
+      stats[2].value = allRecords.filter(function(a) { return a.level === 'info' }).length
+      stats[3].value = allRecords.filter(function(a) { return a.isRead === 1 }).length
     }
-    // 加载统计
+    // 加载未读数
     const cnt = await api.get('/bi/alerts/count')
-    if (cnt.code === 200) stats[0].value = cnt.data.unread || 0
+    if (cnt.code === 200) {
+      stats[0].value = cnt.data.unread || 0
+    }
   } catch (e) {
     console.error('Alert load error:', e)
   }

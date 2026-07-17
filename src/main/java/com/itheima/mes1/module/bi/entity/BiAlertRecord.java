@@ -13,6 +13,7 @@ public class BiAlertRecord {
     @TableId(type = IdType.AUTO)
     private Long id;
     private Long ruleId;
+    private String category;
     private String title;
     private String content;
     private String level;

@@ -16,25 +16,20 @@ public class BiOverviewService {
     @Autowired
     private BiMapper biMapper;
 
-    /** 经营概览卡片 */
+    /** 经营概览卡片（全部累计数据） */
     public Map<String, Object> overview() {
-        LocalDate now = LocalDate.now();
+        // 全部时间范围
+        LocalDateTime allStart = LocalDate.of(2020, 1, 1).atStartOfDay();
+        LocalDateTime allEnd = LocalDate.now().plusDays(1).atStartOfDay();
+        // 上月（用于环比）
+        LocalDateTime prevMonthStart = LocalDate.now().minusMonths(1).withDayOfMonth(1).atStartOfDay();
+        LocalDateTime prevMonthEnd = LocalDate.now().withDayOfMonth(1).atStartOfDay();
 
-        // 本月
-        LocalDateTime monthStart = now.withDayOfMonth(1).atStartOfDay();
-        LocalDateTime monthEnd = monthStart.plusMonths(1);
-        // 上月
-        LocalDateTime prevMonthStart = monthStart.minusMonths(1);
-        LocalDateTime prevMonthEnd = monthStart;
-        // 去年同月
-        LocalDateTime lastYearStart = monthStart.minusYears(1);
-        LocalDateTime lastYearEnd = monthEnd.minusYears(1);
-
-        BigDecimal monthSales = biMapper.selectMonthSales(monthStart, monthEnd);
+        BigDecimal monthSales = biMapper.selectMonthSales(allStart, allEnd);
+        long monthOrders = biMapper.selectMonthOrderCount(allStart, allEnd);
+        BigDecimal monthProfit = biMapper.selectMonthGrossProfit(allStart, allEnd);
+        // 上月销售额（环比）
         BigDecimal prevMonthSales = biMapper.selectMonthSales(prevMonthStart, prevMonthEnd);
-        BigDecimal lastYearSales = biMapper.selectMonthSales(lastYearStart, lastYearEnd);
-        long monthOrders = biMapper.selectMonthOrderCount(monthStart, monthEnd);
-        BigDecimal monthProfit = biMapper.selectMonthGrossProfit(monthStart, monthEnd);
 
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("monthSales", monthSales);
@@ -52,7 +47,10 @@ public class BiOverviewService {
         data.put("avgOrderAmount", avgOrder);
         // 环比
         data.put("momSales", computeChange(monthSales, prevMonthSales));
-        // 同比
+        // 同比（去年全年）
+        LocalDateTime lastYearStart = LocalDate.now().minusYears(1).withDayOfYear(1).atStartOfDay();
+        LocalDateTime lastYearEnd = LocalDate.now().minusYears(1).plusDays(1).atStartOfDay();
+        BigDecimal lastYearSales = biMapper.selectMonthSales(lastYearStart, lastYearEnd);
         data.put("yoySales", computeChange(monthSales, lastYearSales));
 
         return data;

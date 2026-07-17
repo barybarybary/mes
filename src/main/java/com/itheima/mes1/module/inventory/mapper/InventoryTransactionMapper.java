@@ -21,4 +21,10 @@ public interface InventoryTransactionMapper extends BaseMapper<InventoryTransact
     @Select("SELECT COALESCE(SUM(quantity), 0) FROM inventory_transaction " +
             "WHERE type = 'in' AND create_time >= #{start} AND create_time < #{end}")
     BigDecimal sumInboundQuantity(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    /** 指定时间段内按仓库出库总量（取绝对值） */
+    @Select("SELECT COALESCE(SUM(ABS(quantity)), 0) FROM inventory_transaction " +
+            "WHERE type = 'out' AND warehouse_id = #{warehouseId} AND create_time >= #{start}")
+    BigDecimal sumOutboundByWarehouse(@Param("warehouseId") Long warehouseId,
+                                       @Param("start") LocalDateTime start);
 }

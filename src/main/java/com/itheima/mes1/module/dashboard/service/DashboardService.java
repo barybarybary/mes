@@ -42,53 +42,81 @@ public class DashboardService {
         long skuCount = inventoryMapper.selectCount(
                 new LambdaQueryWrapper<Inventory>().gt(Inventory::getQuantity, 0));
 
-        // 本月销售额
-        LocalDateTime monthStart = LocalDate.now().withDayOfMonth(1).atStartOfDay();
-        LocalDateTime monthEnd = monthStart.plusMonths(1);
+        // 全部销售额（累计）
+        List<SaleOrder> allOrders = saleOrderMapper.selectList(null);
         BigDecimal totalSalesAmount = BigDecimal.ZERO;
-        List<SaleOrder> monthOrders = saleOrderMapper.selectList(
-                new LambdaQueryWrapper<SaleOrder>()
-                        .ge(SaleOrder::getCreateTime, monthStart)
-                        .lt(SaleOrder::getCreateTime, monthEnd));
-        for (SaleOrder o : monthOrders) {
+        for (SaleOrder o : allOrders) {
             if (o.getTotalAmount() != null) totalSalesAmount = totalSalesAmount.add(o.getTotalAmount());
         }
-        long totalOrders = monthOrders.size();
+        long totalOrders = allOrders.size();
 
-        // 上月销售额 (环比)
-        LocalDateTime prevStart = monthStart.minusMonths(1);
-        long prevOrderCount = saleOrderMapper.selectCount(
+        // 本月新增订单（环比用）
+        LocalDateTime monthStart = LocalDate.now().withDayOfMonth(1).atStartOfDay();
+        long monthOrders = saleOrderMapper.selectCount(
                 new LambdaQueryWrapper<SaleOrder>()
-                        .ge(SaleOrder::getCreateTime, prevStart)
+                        .ge(SaleOrder::getCreateTime, monthStart));
+        long prevMonthOrders = saleOrderMapper.selectCount(
+                new LambdaQueryWrapper<SaleOrder>()
+                        .ge(SaleOrder::getCreateTime, monthStart.minusMonths(1))
                         .lt(SaleOrder::getCreateTime, monthStart));
-        BigDecimal prevSales = BigDecimal.ZERO;
+        int orderGrowth = prevMonthOrders > 0
+                ? (int) Math.round((monthOrders - prevMonthOrders) * 100.0 / prevMonthOrders)
+                : (monthOrders > 0 ? 100 : 0);
+
+        BigDecimal monthSales = BigDecimal.ZERO;
+        for (SaleOrder o : saleOrderMapper.selectList(
+                new LambdaQueryWrapper<SaleOrder>().ge(SaleOrder::getCreateTime, monthStart))) {
+            if (o.getTotalAmount() != null) monthSales = monthSales.add(o.getTotalAmount());
+        }
+        BigDecimal prevMonthSales = BigDecimal.ZERO;
         for (SaleOrder o : saleOrderMapper.selectList(
                 new LambdaQueryWrapper<SaleOrder>()
-                        .ge(SaleOrder::getCreateTime, prevStart)
+                        .ge(SaleOrder::getCreateTime, monthStart.minusMonths(1))
                         .lt(SaleOrder::getCreateTime, monthStart))) {
-            if (o.getTotalAmount() != null) prevSales = prevSales.add(o.getTotalAmount());
+            if (o.getTotalAmount() != null) prevMonthSales = prevMonthSales.add(o.getTotalAmount());
         }
+        int salesGrowth = prevMonthSales.compareTo(BigDecimal.ZERO) > 0
+                ? monthSales.subtract(prevMonthSales).multiply(new BigDecimal("100")).divide(prevMonthSales, 0, RoundingMode.HALF_UP).intValue()
+                : (monthSales.compareTo(BigDecimal.ZERO) > 0 ? 100 : 0);
 
-        int salesGrowth = prevSales.compareTo(BigDecimal.ZERO) > 0
-                ? totalSalesAmount.subtract(prevSales).multiply(new BigDecimal("100")).divide(prevSales, 0, RoundingMode.HALF_UP).intValue()
-                : 0;
-        int orderGrowth = prevOrderCount > 0
-                ? (int) Math.round((totalOrders - prevOrderCount) * 100.0 / prevOrderCount)
-                : 0;
-
-        // 仓库维度指标
+        // 仓库维度指标（含真实周转数据）
         List<Map<String, Object>> warehouseMetrics = new ArrayList<>();
         List<Map<String, Object>> whStructure = inventoryMapper.selectWarehouseStructure();
+        // 近30天交易数据用于计算周转
+        LocalDateTime days30Ago = LocalDate.now().minusDays(30).atStartOfDay();
         for (Map<String, Object> wh : whStructure) {
+            Long warehouseId = ((Number) wh.get("warehouse_id")).longValue();
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("name", wh.get("warehouse_name"));
             m.put("warehouseName", wh.get("warehouse_name"));
-            m.put("stockQty", wh.get("total_quantity"));
+            BigDecimal stockQty = (BigDecimal) wh.get("total_quantity");
+            m.put("stockQty", stockQty);
             m.put("skuCount", wh.get("sku_count"));
-            m.put("orderCount", totalOrders);
-            m.put("outputQty", 0);
-            m.put("turnoverDays", 0);
-            m.put("healthScore", 75);
+            // 当日入库量
+            m.put("orderCount", monthOrders);
+
+            // 近30天出库量（按仓库）
+            BigDecimal whOutQty = transactionMapper.sumOutboundByWarehouse(warehouseId, days30Ago);
+            m.put("outputQty", whOutQty != null ? whOutQty : BigDecimal.ZERO);
+
+            // 周转天数 = 平均库存 / (出库量/30)
+            BigDecimal avgOutPerDay = (whOutQty != null && whOutQty.compareTo(BigDecimal.ZERO) > 0)
+                    ? whOutQty.divide(new BigDecimal("30"), 4, RoundingMode.HALF_UP)
+                    : BigDecimal.ZERO;
+            BigDecimal turnoverDays = avgOutPerDay.compareTo(BigDecimal.ZERO) > 0
+                    ? stockQty.divide(avgOutPerDay, 1, RoundingMode.HALF_UP)
+                    : BigDecimal.ZERO;
+            m.put("turnoverDays", turnoverDays);
+
+            // 健康度评分: 周转天数越短越好
+            int healthScore = 75;
+            if (turnoverDays.compareTo(BigDecimal.ZERO) > 0) {
+                if (turnoverDays.compareTo(new BigDecimal("15")) <= 0) healthScore = 90;
+                else if (turnoverDays.compareTo(new BigDecimal("30")) <= 0) healthScore = 75;
+                else if (turnoverDays.compareTo(new BigDecimal("60")) <= 0) healthScore = 60;
+                else healthScore = 40;
+            }
+            m.put("healthScore", healthScore);
             warehouseMetrics.add(m);
         }
 

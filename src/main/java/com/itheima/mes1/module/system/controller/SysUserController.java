@@ -13,6 +13,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
 import java.util.List;
 import java.util.Map;
 
@@ -25,6 +27,8 @@ public class SysUserController {
     private SysUserService userService;
     @Autowired
     private SysRoleMapper roleMapper;
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder;
 
     @RequirePermission("system:user:list")
     @Operation(summary = "分页查询用户")
@@ -54,6 +58,9 @@ public class SysUserController {
     @RequirePermission("system:user:add")
     @PostMapping
     public Result<?> add(@RequestBody SysUser user) {
+        if (user.getPassword() != null && !user.getPassword().isBlank()) {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        }
         userService.save(user);
         return Result.ok();
     }
@@ -62,6 +69,9 @@ public class SysUserController {
     @Operation(summary = "修改用户")
     @PutMapping
     public Result<?> update(@RequestBody SysUser user) {
+        if (user.getPassword() != null && !user.getPassword().isBlank()) {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        }
         userService.updateById(user);
         return Result.ok();
     }

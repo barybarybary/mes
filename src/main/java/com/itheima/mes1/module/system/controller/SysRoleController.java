@@ -10,6 +10,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import com.itheima.mes1.module.system.mapper.SysRoleMenuMapper;
+import com.itheima.mes1.module.system.mapper.SysUserRoleMapper;
+
 import java.util.List;
 import java.util.Map;
 
@@ -20,6 +23,10 @@ public class SysRoleController {
 
     @Autowired
     private SysRoleService roleService;
+    @Autowired
+    private SysRoleMenuMapper roleMenuMapper;
+    @Autowired
+    private SysUserRoleMapper userRoleMapper;
 
     @RequirePermission("system:role:list")
     @Operation(summary = "角色列表")
@@ -48,6 +55,9 @@ public class SysRoleController {
     @Operation(summary = "删除角色")
     @DeleteMapping("/{id}")
     public Result<?> delete(@PathVariable Long id) {
+        // 清理关联数据
+        roleMenuMapper.deleteByRoleId(id);
+        userRoleMapper.deleteByRoleId(id);
         roleService.removeById(id);
         return Result.ok();
     }

@@ -9,4 +9,7 @@ import org.apache.ibatis.annotations.Mapper;
 public interface SysUserRoleMapper extends BaseMapper<SysUserRole> {
     @Delete("DELETE FROM sys_user_role WHERE user_id = #{userId}")
     void deleteByUserId(Long userId);
+
+    @Delete("DELETE FROM sys_user_role WHERE role_id = #{roleId}")
+    void deleteByRoleId(Long roleId);
 }

@@ -1,14 +1,13 @@
-version: "3.8"
 services:
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
     container_name: mes1-rabbitmq
     ports:
-      - "5672:5672"      # AMQP 协议
-      - "15672:15672"     # 管理界面 (http://localhost:15672)
+      - "${MES_RABBITMQ_PORT:-5672}:5672"       # AMQP 协议
+      - "${MES_RABBITMQ_MGMT_PORT:-15672}:15672" # 管理界面
     environment:
-      RABBITMQ_DEFAULT_USER: mes1
-      RABBITMQ_DEFAULT_PASS: mes1pass
+      RABBITMQ_DEFAULT_USER: ${MES_RABBITMQ_USERNAME:-mes1}
+      RABBITMQ_DEFAULT_PASS: ${MES_RABBITMQ_PASSWORD:-mes1pass}
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     restart: unless-stopped

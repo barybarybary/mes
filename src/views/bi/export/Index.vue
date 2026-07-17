@@ -74,10 +74,7 @@ const history = ref([])
 const reports = reactive([
   { key: 'sales-summary', title: '销售汇总报表', desc: '销售额、订单数、客户排行汇总', icon: 'Sell', color: '#3b82f6', bg: 'rgba(59,130,246,0.1)', lastExport: '' },
   { key: 'inventory-report', title: '库存现状报表', desc: '各仓库存量、周转率、预警项', icon: 'Box', color: '#10b981', bg: 'rgba(16,185,129,0.1)', lastExport: '' },
-  { key: 'production-report', title: '生产进度报表', desc: '工单状态、完成率、报工明细', icon: 'Monitor', color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)', lastExport: '' },
-  { key: 'delivery-report', title: '发货跟踪报表', desc: '发货单状态、物流跟踪明细', icon: 'Van', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', lastExport: '' },
-  { key: 'quality-report', title: '质量分析报表', desc: 'QC合格率、不良原因分类', icon: 'Checked', color: '#f43f5e', bg: 'rgba(244,63,94,0.1)', lastExport: '' },
-  { key: 'financial-report', title: '财务结算报表', desc: '应收应付、回款统计', icon: 'Money', color: '#14b8a6', bg: 'rgba(20,184,166,0.1)', lastExport: '' }
+  { key: 'production-report', title: '生产进度报表', desc: '工单状态、完成率、报工明细', icon: 'Monitor', color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)', lastExport: '' }
 ])
 
 async function doExport(reportKey, format) {

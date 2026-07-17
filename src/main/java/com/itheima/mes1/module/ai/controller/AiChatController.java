@@ -24,7 +24,8 @@ public class AiChatController {
     @RequirePermission("ai:chat:list")
     @Operation(summary = "会话列表")
     @GetMapping("/conversations")
-    public Result<List<AiConversation>> conversations(@RequestParam Long userId) {
+    public Result<List<AiConversation>> conversations(
+            @RequestAttribute("userId") Long userId) {
         return Result.ok(aiChatService.listConversations(userId));
     }
 
@@ -38,8 +39,8 @@ public class AiChatController {
     @RequirePermission("ai:chat:list")
     @Operation(summary = "发送消息 (RAG对话)")
     @PostMapping("/chat")
-    public Result<AiMessage> chat(@RequestBody Map<String, Object> body) {
-        Long userId = Long.valueOf(body.get("userId").toString());
+    public Result<AiMessage> chat(@RequestBody Map<String, Object> body,
+                                  @RequestAttribute("userId") Long userId) {
         Long conversationId = body.get("conversationId") != null
                 ? Long.valueOf(body.get("conversationId").toString()) : null;
         String question = (String) body.get("question");

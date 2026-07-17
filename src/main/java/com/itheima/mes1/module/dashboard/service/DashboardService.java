@@ -93,7 +93,7 @@ public class DashboardService {
             m.put("stockQty", stockQty);
             m.put("skuCount", wh.get("sku_count"));
             // 当日入库量
-            m.put("orderCount", monthOrders);
+            m.put("orderCount", totalOrders);
 
             // 近30天出库量（按仓库）
             BigDecimal whOutQty = transactionMapper.sumOutboundByWarehouse(warehouseId, days30Ago);

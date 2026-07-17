@@ -35,7 +35,6 @@ public class BiExportController {
     @Operation(summary = "导出销售报表")
     @GetMapping("/export/sales")
     public ResponseEntity<byte[]> exportSales(
-            @RequestParam(defaultValue = "excel") String format,
             @RequestParam(required = false) Integer year,
             @RequestParam(required = false) Integer month) {
         byte[] data = exportService.exportSalesExcel(year, month);
@@ -46,7 +45,7 @@ public class BiExportController {
     @RequirePermission("bi:export")
     @Operation(summary = "导出库存报表")
     @GetMapping("/export/inventory")
-    public ResponseEntity<byte[]> exportInventory(@RequestParam(defaultValue = "excel") String format) {
+    public ResponseEntity<byte[]> exportInventory() {
         byte[] data = exportService.exportInventoryExcel();
         String filename = "inventory_report_" + LocalDate.now() + ".xlsx";
         return buildResponse(data, filename);
@@ -56,7 +55,6 @@ public class BiExportController {
     @Operation(summary = "导出生产报表")
     @GetMapping("/export/production")
     public ResponseEntity<byte[]> exportProduction(
-            @RequestParam(defaultValue = "excel") String format,
             @RequestParam(required = false) Integer year,
             @RequestParam(required = false) Integer month) {
         byte[] data = exportService.exportProductionExcel(year, month);

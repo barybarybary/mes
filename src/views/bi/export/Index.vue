@@ -3,7 +3,7 @@
     <div class="flex items-center justify-between mb-6">
       <div>
         <h2 class="text-xl font-bold text-slate-800 dark:text-slate-200">报表导出</h2>
-        <p class="text-sm text-slate-400 mt-1">一键导出经营报表，支持 Excel / PDF 格式</p>
+        <p class="text-sm text-slate-400 mt-1">一键导出经营报表，支持 Excel 格式</p>
       </div>
     </div>
 
@@ -16,12 +16,9 @@
           </div>
           <h3 class="font-semibold text-slate-800 dark:text-slate-200 mb-1">{{ r.title }}</h3>
           <p class="text-xs text-slate-400 mb-4">{{ r.desc }}</p>
-          <div class="flex items-center gap-2">
-            <el-button size="small" type="primary" round @click="doExport(r.key, 'excel')">
-              <el-icon class="mr-1"><Download /></el-icon>Excel
-            </el-button>
-            <el-button size="small" round @click="doExport(r.key, 'pdf')">
-              <el-icon class="mr-1"><Printer /></el-icon>PDF
+          <div>
+            <el-button size="small" type="primary" round @click="doExport(r.key)">
+              <el-icon class="mr-1"><Download /></el-icon>导出 Excel
             </el-button>
           </div>
           <p v-if="r.lastExport" class="text-xs text-slate-400 mt-3">上次导出：{{ r.lastExport }}</p>
@@ -38,8 +35,7 @@
         </el-table-column>
         <el-table-column prop="format" label="格式" width="80" align="center">
           <template #default="{ row }">
-            <el-tag v-if="row.format === 'excel'" type="success" round size="small">Excel</el-tag>
-            <el-tag v-else type="danger" round size="small">PDF</el-tag>
+            <el-tag type="success" round size="small">Excel</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="fileName" label="文件名" min-width="200" show-overflow-tooltip>
@@ -65,7 +61,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Download, Printer, Document } from '@element-plus/icons-vue'
+import { Download, Document } from '@element-plus/icons-vue'
 import api from '@/api'
 
 const loading = ref(false)
@@ -77,19 +73,18 @@ const reports = reactive([
   { key: 'production-report', title: '生产进度报表', desc: '工单状态、完成率、报工明细', icon: 'Monitor', color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)', lastExport: '' }
 ])
 
-async function doExport(reportKey, format) {
+async function doExport(reportKey) {
   try {
     const report = reports.find(function(r) { return r.key === reportKey })
     const typeMap = { 'sales-summary': 'sales', 'inventory-report': 'inventory', 'production-report': 'production' }
     const type = typeMap[reportKey] || reportKey
     const res = await api.get('/bi/export/' + type, {
-      params: { format: format },
       responseType: 'blob'
     })
     const url = window.URL.createObjectURL(new Blob([res]))
     const link = document.createElement('a')
     link.href = url
-    link.download = reportKey + '_' + new Date().toISOString().slice(0, 10) + '.' + (format === 'pdf' ? 'xlsx' : 'xlsx')
+    link.download = reportKey + '_' + new Date().toISOString().slice(0, 10) + '.xlsx'
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -118,7 +113,11 @@ async function fetchHistory() {
 }
 
 function downloadFile(row) {
-  const type = row.reportName && row.reportName.includes('库存') ? 'inventory' : 'sales'
+  const nameMap = { '库存': 'inventory', '生产': 'production', '销售': 'sales' }
+  let type = 'sales'
+  for (const key of Object.keys(nameMap)) {
+    if (row.reportName && row.reportName.includes(key)) { type = nameMap[key]; break }
+  }
   api.get('/bi/export/' + type, { responseType: 'blob' }).then(function(res) {
     const url = window.URL.createObjectURL(new Blob([res]))
     const link = document.createElement('a')

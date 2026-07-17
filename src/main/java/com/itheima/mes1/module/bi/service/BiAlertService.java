@@ -112,7 +112,7 @@ public class BiAlertService {
                 new LambdaQueryWrapper<BiAlertRecord>()
                         .eq(BiAlertRecord::getTitle, title)
                         .likeRight(BiAlertRecord::getContent, content.substring(0, Math.min(30, content.length())))
-                        .ge(BiAlertRecord::getCreateTime, LocalDateTime.now().toLocalDate()));
+                        .ge(BiAlertRecord::getCreateTime, LocalDateTime.now().minusDays(7)));
         if (exists > 0) return;
 
         BiAlertRecord record = new BiAlertRecord();

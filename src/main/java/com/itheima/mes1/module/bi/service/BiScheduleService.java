@@ -98,4 +98,11 @@ public class BiScheduleService {
         alertService.scanAndRecord();
     }
 
+    /** 每天凌晨2点清理超过7天的已读预警 */
+    @Scheduled(cron = "0 0 2 * * ?")
+    public void autoCleanAlerts() {
+        log.info("开始自动清理过期预警...");
+        alertService.cleanOldAlerts(7);
+    }
+
 }

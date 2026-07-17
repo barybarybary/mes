@@ -107,6 +107,18 @@ public class BiAlertService {
         messageSender.sendEvent("alert.scan", Map.of("unread", unreadCount()));
     }
 
+    // ==================== 预警清理 ====================
+
+    /** 清理超过指定天数的已读预警（每天自动调用） */
+    public void cleanOldAlerts(int keepDays) {
+        LocalDateTime cutoff = LocalDateTime.now().minusDays(keepDays);
+        long deleted = recordMapper.delete(
+                new LambdaQueryWrapper<BiAlertRecord>()
+                        .eq(BiAlertRecord::getIsRead, 1)
+                        .lt(BiAlertRecord::getCreateTime, cutoff));
+        log.info("预警清理完成: 删除 {} 条超过 {} 天的已读预警", deleted, keepDays);
+    }
+
     private void saveAlert(String category, String title, String content, String level) {
         long exists = recordMapper.selectCount(
                 new LambdaQueryWrapper<BiAlertRecord>()

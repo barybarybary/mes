@@ -75,6 +75,15 @@ public class DashboardController {
         return Result.ok(dashboardService.salesRanking(days, limit));
     }
 
+    // ==================== MES 车间驾驶舱 ====================
+
+    @RequirePermission("dashboard:view")
+    @Operation(summary = "MES车间驾驶舱摘要")
+    @GetMapping("/mes-summary")
+    public Result<Map<String, Object>> mesSummary() {
+        return Result.ok(dashboardService.mesSummary());
+    }
+
     // ==================== 数据大屏 ====================
 
     @RequirePermission("dashboard:view")

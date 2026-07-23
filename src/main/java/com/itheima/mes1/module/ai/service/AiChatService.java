@@ -115,7 +115,9 @@ public class AiChatService {
                 8. 用户问客户时，调用 listCustomers
                 9. 用户问系统概况/今天怎么样时，调用 getDashboardSummary
                 10. 用户要求"监督"、"巡检"、"系统健康检查"时，调用 systemHealthCheck 进行全面诊断
-                11. 不要把工具名告诉用户，直接用自然语言回答""";
+                11. 用户要求生成报表、导出数据、制作统计报告时，调用 generateReport 工具。reportType: sales(销售报表)/production(生产报表)/inventory(库存报表)/summary(综合报表); timeRange: 本周/本月/上月/近7天/近30天
+                12. 用户询问历史报表或"我的报表"时，调用 getMyReports 工具
+                13. 不要把工具名告诉用户，直接用自然语言回答""";
 
         if (!context.isEmpty()) {
             systemPrompt += "\n\n以下参考资料仅用于回答知识性问题（数据查询优先用工具）:\n" + context;

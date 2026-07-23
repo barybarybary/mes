@@ -22,6 +22,8 @@ public class WorkOrderProcess {
     private BigDecimal scrapQty;
     private Integer status;
     private String worker;
+    private Long assignedTo;
+    private Long equipmentId;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private String remark;

@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 /**
- * 工单事件消费者 — 监听 mes.alert.queue（routing key: notify.workorder.#）
+ * 工单事件消费者 — 监听 mes.workorder.queue（routing key: notify.workorder.#）
  */
 @Slf4j
 @Component
@@ -22,7 +22,7 @@ public class WorkOrderEventConsumer {
 
     private final ObjectMapper objectMapper;
 
-    @RabbitListener(queues = "mes.alert.queue")
+    @RabbitListener(queues = "mes.workorder.queue")
     public void onMessage(MqMessage message, Channel channel,
                           @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag) {
         try {

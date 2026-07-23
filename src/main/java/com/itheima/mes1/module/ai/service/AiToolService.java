@@ -18,6 +18,9 @@ import dev.langchain4j.agent.tool.Tool;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.itheima.mes1.module.report.entity.ReportRecord;
+import com.itheima.mes1.module.report.service.ReportGenerateService;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -36,6 +39,11 @@ public class AiToolService {
     @Autowired private WorkOrderMapper workOrderMapper;
     @Autowired private CustomerMapper customerMapper;
     @Autowired private InventoryTransactionMapper transactionMapper;
+    @Autowired private com.itheima.mes1.module.production.mapper.WorkReportMapper workReportMapper;
+    @Autowired private com.itheima.mes1.module.production.mapper.QcRecordMapper qcRecordMapper;
+    @Autowired private com.itheima.mes1.module.knowledge.mapper.KbDocumentMapper kbDocumentMapper;
+    @Autowired private com.itheima.mes1.module.base.mapper.BomMapper bomMapper;
+    @Autowired private ReportGenerateService reportGenerateService;
 
     @Tool("按名称或编码模糊查询产品。参数 keyword 为产品名称或编码关键字")
     public String queryProduct(@P("产品名称或编码关键字") String keyword) {
@@ -270,6 +278,173 @@ public class AiToolService {
                 .map(c -> String.format("[%s] %s | 联系人:%s | 电话:%s",
                         c.getCode(), c.getName(), c.getContact(), c.getPhone()))
                 .collect(Collectors.joining("\n"));
+    }
+
+    // ==================== MES 专用工具 ====================
+
+    @Tool("查询今日生产概况：总报工数量、不良数量、良品率、在产工单数")
+    public String getTodayProduction() {
+        LocalDate today = LocalDate.now();
+        var reports = workReportMapper.selectList(
+                new LambdaQueryWrapper<com.itheima.mes1.module.production.entity.WorkReport>()
+                        .ge(com.itheima.mes1.module.production.entity.WorkReport::getCreateTime, today));
+        BigDecimal totalQty = BigDecimal.ZERO;
+        BigDecimal totalDefect = BigDecimal.ZERO;
+        for (var r : reports) {
+            if (r.getQuantity() != null) totalQty = totalQty.add(r.getQuantity());
+            if (r.getScrapQty() != null) totalDefect = totalDefect.add(r.getScrapQty());
+        }
+        long inProgressOrders = workOrderMapper.selectCount(
+                new LambdaQueryWrapper<WorkOrder>().eq(WorkOrder::getStatus, 2));
+        BigDecimal defectRate = totalQty.compareTo(BigDecimal.ZERO) > 0
+                ? totalDefect.divide(totalQty, 4, java.math.RoundingMode.HALF_UP)
+                        .multiply(new BigDecimal("100"))
+                : BigDecimal.ZERO;
+
+        return String.format("=== 今日生产概况 (%s) ===\n"
+                        + "总报工: %s 件\n不良品: %s 件\n良品率: %.1f%%\n生产中工单: %d 个",
+                today, totalQty, totalDefect, defectRate, inProgressOrders);
+    }
+
+    @Tool("查询指定时间段的不良率统计，可按工序名称筛选。返回不良率和不良原因分布")
+    public String getDefectRate(
+            @P("开始日期,格式yyyy-MM-dd") String startDate,
+            @P("结束日期,格式yyyy-MM-dd") String endDate) {
+        var records = qcRecordMapper.selectList(
+                new LambdaQueryWrapper<com.itheima.mes1.module.production.entity.QcRecord>()
+                        .ge(com.itheima.mes1.module.production.entity.QcRecord::getCheckDate,
+                                LocalDate.parse(startDate))
+                        .le(com.itheima.mes1.module.production.entity.QcRecord::getCheckDate,
+                                LocalDate.parse(endDate)));
+        if (records.isEmpty()) return "该时间段内没有质检记录。";
+
+        long totalCheck = records.stream().mapToLong(r -> r.getCheckQty() != null ? r.getCheckQty().longValue() : 0).sum();
+        long totalNg = records.stream().mapToLong(r -> r.getNgQty() != null ? r.getNgQty().longValue() : 0).sum();
+        double rate = totalCheck > 0 ? (double) totalNg / totalCheck * 100 : 0;
+
+        // 不良原因统计
+        var causeCount = records.stream()
+                .filter(r -> r.getNgDescription() != null && !r.getNgDescription().isBlank())
+                .collect(java.util.stream.Collectors.groupingBy(
+                        com.itheima.mes1.module.production.entity.QcRecord::getNgDescription,
+                        java.util.stream.Collectors.counting()));
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format("=== 不良率统计 (%s ~ %s) ===\n", startDate, endDate));
+        sb.append(String.format("总检验数: %d | 不良数: %d | 不良率: %.1f%%\n", totalCheck, totalNg, rate));
+        if (!causeCount.isEmpty()) {
+            sb.append("不良原因分布:\n");
+            causeCount.entrySet().stream()
+                    .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
+                    .forEach(e -> sb.append(String.format("  %s: %d 次\n", e.getKey(), e.getValue())));
+        }
+        return sb.toString();
+    }
+
+    @Tool("根据产品名称查BOM用料清单，列出所有子件及其用量")
+    public String getBomByProduct(@P("产品名称关键字") String productName) {
+        var products = productMapper.selectList(
+                new LambdaQueryWrapper<Product>().like(Product::getName, productName).last("LIMIT 5"));
+        if (products.isEmpty()) return "未找到产品：「" + productName + "」";
+        Product p = products.get(0);
+
+        var boms = bomMapper.selectList(
+                new LambdaQueryWrapper<com.itheima.mes1.module.base.entity.Bom>()
+                        .eq(com.itheima.mes1.module.base.entity.Bom::getProductId, p.getId()));
+        if (boms.isEmpty()) return "产品 " + p.getName() + " 暂无BOM数据。";
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format("=== %s 用料清单 ===\n", p.getName()));
+        for (var bom : boms) {
+            sb.append(String.format("  %s: %s %s/件\n",
+                    bom.getMaterialName() != null ? bom.getMaterialName() : "物料#" + bom.getMaterialId(),
+                    bom.getQuantity(), bom.getUnit()));
+        }
+        return sb.toString();
+    }
+
+    @Tool("搜索知识库中的SOP/规格书/操作指导。传入问题关键词，返回相关文档摘要")
+    public String searchSOP(@P("搜索关键词,如硫化温度、缺胶处理") String query) {
+        var docs = kbDocumentMapper.selectList(
+                new LambdaQueryWrapper<com.itheima.mes1.module.knowledge.entity.KbDocument>()
+                        .like(com.itheima.mes1.module.knowledge.entity.KbDocument::getTitle, query)
+                        .or().like(com.itheima.mes1.module.knowledge.entity.KbDocument::getContent, query)
+                        .last("LIMIT 5"));
+        if (docs.isEmpty()) return "知识库中未找到与「" + query + "」相关的文档。";
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("=== 知识库检索结果 ===\n");
+        for (var doc : docs) {
+            String content = doc.getContent();
+            if (content != null && content.length() > 200) {
+                content = content.substring(0, 200) + "...";
+            }
+            sb.append(String.format("[%s] %s\n", doc.getCategory() != null ? doc.getCategory() : "文档", doc.getTitle()));
+            if (content != null) sb.append("摘要: ").append(content).append("\n");
+        }
+        return sb.toString();
+    }
+
+    @Tool("获取工人报工排名。统计指定日期范围内报工最多的工人")
+    public String getWorkerRanking(
+            @P("开始日期,格式yyyy-MM-dd") String startDate,
+            @P("结束日期,格式yyyy-MM-dd") String endDate) {
+        var reports = workReportMapper.selectList(
+                new LambdaQueryWrapper<com.itheima.mes1.module.production.entity.WorkReport>()
+                        .ge(com.itheima.mes1.module.production.entity.WorkReport::getReportDate,
+                                LocalDate.parse(startDate))
+                        .le(com.itheima.mes1.module.production.entity.WorkReport::getReportDate,
+                                LocalDate.parse(endDate)));
+        if (reports.isEmpty()) return "该时间段内没有报工记录。";
+
+        var ranking = reports.stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        r -> r.getWorker() != null ? r.getWorker() : "未知",
+                        java.util.stream.Collectors.reducing(BigDecimal.ZERO,
+                                com.itheima.mes1.module.production.entity.WorkReport::getQuantity,
+                                BigDecimal::add)));
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format("=== 工人报工排名 (%s ~ %s) ===\n", startDate, endDate));
+        ranking.entrySet().stream()
+                .sorted((a, b) -> b.getValue().compareTo(a.getValue()))
+                .limit(10)
+                .forEach(e -> sb.append(String.format("  %s: %s 件\n", e.getKey(), e.getValue())));
+        return sb.toString();
+    }
+
+    @Tool("生成报表并导出为Excel。当用户要求生成报表、导出数据、制作统计报告时调用。" +
+           "reportType: sales(销售报表)/production(生产报表)/inventory(库存报表)/summary(综合报表); " +
+           "timeRange: 本周/本月/上月/近7天/近30天")
+    public String generateReport(
+            @P("报表类型: sales/production/inventory/summary") String reportType,
+            @P("时间范围: 本周/本月/上月/近7天/近30天") String timeRange) {
+        Long userId = com.itheima.mes1.common.util.RequestContextUtil.currentUserId();
+        if (userId == null) return "无法识别用户身份，请先登录。";
+        try {
+            ReportRecord record = reportGenerateService.generate(reportType, timeRange, userId);
+            return String.format("报表已生成！\n类型: %s\n时间: %s\n标题: %s\n[reportId:%d]\n您可以点击下载链接下载Excel文件。",
+                    reportType, timeRange, record.getTitle(), record.getId());
+        } catch (Exception e) {
+            return "报表生成失败: " + e.getMessage();
+        }
+    }
+
+    @Tool("查看当前用户最近生成的报表记录。当用户询问'我的报表'或'之前生成的报表'时调用")
+    public String getMyReports() {
+        Long userId = com.itheima.mes1.common.util.RequestContextUtil.currentUserId();
+        if (userId == null) return "无法识别用户身份，请先登录。";
+        List<ReportRecord> records = reportGenerateService.listByUser(userId, 10);
+        if (records.isEmpty()) return "您还没有生成过报表。可以对我说「生成本月销售报表」来生成第一份报表。";
+        StringBuilder sb = new StringBuilder("=== 您的最近报表 ===\n");
+        for (ReportRecord r : records) {
+            sb.append(String.format("[reportId:%d] %s | 类型:%s | 时间:%s | 生成于:%s\n",
+                    r.getId(), r.getTitle(),
+                    r.getReportType(), r.getTimeRange(),
+                    r.getCreateTime() != null ? r.getCreateTime().toLocalDate().toString() : "-"));
+        }
+        sb.append("\n如需下载，请访问报表中心页面。");
+        return sb.toString();
     }
 
     private String statusDesc(Integer s) {

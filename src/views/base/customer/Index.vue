@@ -1,13 +1,13 @@
 <template>
-  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-    <div class="px-6 py-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+    <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <h2 class="text-lg font-semibold text-slate-800">客户管理</h2>
-        <p class="text-xs text-slate-400 mt-1">管理客户基础信息</p>
+        <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-200">客户管理</h2>
+        <p class="text-xs text-slate-400 dark:text-slate-300 mt-1">管理客户基础信息</p>
       </div>
       <div class="flex items-center gap-3">
         <el-input v-model="keyword" placeholder="搜索客户" clearable class="w-56" @change="fetchData">
-          <template #prefix><el-icon class="text-slate-400"><Search /></el-icon></template>
+          <template #prefix><el-icon class="text-slate-400 dark:text-slate-300"><Search /></el-icon></template>
         </el-input>
         <el-button type="primary" @click="openDialog()" class="h-10 px-5 rounded-xl font-medium">
           <el-icon class="mr-1"><Plus /></el-icon>新增客户
@@ -21,7 +21,7 @@
           <template #default="{ row }"><el-tag type="info" effect="light" size="small">{{ row.code }}</el-tag></template>
         </el-table-column>
         <el-table-column prop="name" label="客户名称" min-width="180">
-          <template #default="{ row }"><span class="font-medium text-slate-700">{{ row.name }}</span></template>
+          <template #default="{ row }"><span class="font-medium text-slate-700 dark:text-slate-600">{{ row.name }}</span></template>
         </el-table-column>
         <el-table-column prop="contact" label="联系人" width="100" />
         <el-table-column prop="phone" label="联系电话" width="140" />

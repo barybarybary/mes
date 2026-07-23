@@ -16,23 +16,12 @@ const NAME_MAP = {
   'Process': '工序管理',
   'Customer': '客户管理',
   'Warehouse': '仓库管理',
-  'Sales': '销售管理',
-  'Sale Order': '销售订单',
-  'Delivery': '发货管理',
-  'Inventory': '库存管理',
-  'Inventory Transaction': '库存流水',
   'Production': '生产管理',
   'Work Order': '生产工单',
   'Work Report': '报工管理',
   'QC Record': '质检管理',
   'Knowledge': '知识库',
-  'BI': 'BI报表',
-  'Business Overview': '经营分析',
-  'Pivot Analysis': '多维交叉',
-  'Alert Center': '预警中心',
-  'Report Export': '报表导出',
-  'AI Chat': 'AI助手',
-  'Attendance': '考勤打卡'
+  'AI Chat': 'AI助手'
 }
 
 function translateMenu(menu) {
@@ -64,6 +53,9 @@ export const useUserStore = defineStore('user', () => {
 
   async function login(username, password, captchaKey, captchaAnswer, rememberMe = false) {
     const res = await api.post('/auth/login', { username, password, captchaKey, captchaAnswer })
+    if (res.code !== 200 || !res.data) {
+      throw new Error(res.message || '登录失败，请稍后重试')
+    }
     const { token: t, user: u, roles: r, menus: m, permissions: p } = res.data
 
     // 清除两个存储中的旧数据
@@ -88,12 +80,14 @@ export const useUserStore = defineStore('user', () => {
       })
       localStorage.setItem('remember_me', 'true')
     } else {
-      // 不记住：只存 sessionStorage
-      sessionStorage.setItem('token', t)
-      sessionStorage.setItem('user', JSON.stringify(u))
-      sessionStorage.setItem('roles', JSON.stringify(r || []))
-      sessionStorage.setItem('menus', JSON.stringify(m || []))
-      sessionStorage.setItem('permissions', JSON.stringify(p || []))
+      // 不记住：sessionStorage + localStorage，token 24h 后随 Redis 失效
+      [localStorage, sessionStorage].forEach(function(s) {
+        s.setItem('token', t)
+        s.setItem('user', JSON.stringify(u))
+        s.setItem('roles', JSON.stringify(r || []))
+        s.setItem('menus', JSON.stringify(m || []))
+        s.setItem('permissions', JSON.stringify(p || []))
+      })
       localStorage.removeItem('remember_me')
     }
     return res

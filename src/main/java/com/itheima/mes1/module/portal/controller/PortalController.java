@@ -51,6 +51,12 @@ public class PortalController {
         return Result.ok(new PageResult<>(result.getRecords(), result.getTotal(), page, pageSize));
     }
 
+    @Operation(summary = "产品分类")
+    @GetMapping("/categories")
+    public Result<List<Map<String, Object>>> listCategories() {
+        return Result.ok(portalService.listCategories());
+    }
+
     @Operation(summary = "产品详情")
     @GetMapping("/products/{id}")
     public Result<ProductDetailVO> getProduct(@PathVariable Long id) {

@@ -1,9 +1,9 @@
 <template>
-  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-    <div class="px-6 py-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+    <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <h2 class="text-lg font-semibold text-slate-800">仓库管理</h2>
-        <p class="text-xs text-slate-400 mt-1">管理仓库和库位信息</p>
+        <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-200">仓库管理</h2>
+        <p class="text-xs text-slate-400 dark:text-slate-300 mt-1">管理仓库和库位信息</p>
       </div>
       <el-button type="primary" @click="openDialog()" class="h-10 px-5 rounded-xl font-medium">
         <el-icon class="mr-1"><Plus /></el-icon>新增仓库
@@ -16,7 +16,7 @@
           <template #default="{ row }"><el-tag type="info" effect="light" size="small">{{ row.code }}</el-tag></template>
         </el-table-column>
         <el-table-column prop="name" label="仓库名称" min-width="160">
-          <template #default="{ row }"><span class="font-medium text-slate-700">{{ row.name }}</span></template>
+          <template #default="{ row }"><span class="font-medium text-slate-700 dark:text-slate-600">{{ row.name }}</span></template>
         </el-table-column>
         <el-table-column prop="type" label="仓库类型" width="130" align="center">
           <template #default="{ row }">
@@ -64,20 +64,20 @@
     </el-dialog>
 
     <el-dialog v-model="locVisible" title="库位管理" width="480px" class="custom-dialog">
-      <p class="text-sm text-slate-500 mb-4">管理该仓库下的库位信息。</p>
-      <div class="max-h-80 overflow-y-auto border border-slate-200 rounded-xl">
-        <div v-for="l in locations" :key="l.id" class="flex justify-between items-center px-4 py-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+      <p class="text-sm text-slate-500 dark:text-slate-300 mb-4">管理该仓库下的库位信息。</p>
+      <div class="max-h-80 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-xl">
+        <div v-for="l in locations" :key="l.id" class="flex justify-between items-center px-4 py-3 border-b border-slate-100 dark:border-slate-700 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors">
           <div class="flex items-center gap-3">
             <div class="w-8 h-8 rounded-lg bg-sky-50 flex items-center justify-center">
               <el-icon color="#0ea5e9" :size="16"><Location /></el-icon>
             </div>
             <div>
-              <span class="font-medium text-slate-700 text-sm">{{ l.code }}</span>
-              <span v-if="l.name" class="text-slate-400 text-sm ml-2">{{ l.name }}</span>
+              <span class="font-medium text-slate-700 dark:text-slate-600 text-sm">{{ l.code }}</span>
+              <span v-if="l.name" class="text-slate-400 dark:text-slate-300 text-sm ml-2">{{ l.name }}</span>
             </div>
           </div>
         </div>
-        <div v-if="locations.length === 0" class="text-center py-10 text-slate-400 text-sm">暂无库位</div>
+        <div v-if="locations.length === 0" class="text-center py-10 text-slate-400 dark:text-slate-300 text-sm">暂无库位</div>
       </div>
       <div class="flex gap-2 mt-4">
         <el-input v-model="locCode" placeholder="输入库位编码" size="default" class="flex-1" />

@@ -40,6 +40,15 @@ public class WorkReportController {
                 .orderByDesc(WorkReport::getCreateTime);
         Page<WorkReport> result = service.page(new Page<>(page, pageSize), w);
         result.setTotal(service.count(w));
+        // 填充工单号和工序名称
+        WorkReportMapper mapper = (WorkReportMapper) service.getBaseMapper();
+        for (WorkReport report : result.getRecords()) {
+            WorkReport full = mapper.selectWithRelations(report.getId());
+            if (full != null) {
+                report.setWorkOrderNo(full.getWorkOrderNo());
+                report.setProcessName(full.getProcessName());
+            }
+        }
         return Result.ok(new PageResult<>(result.getRecords(), result.getTotal(), page, pageSize));
     }
 
@@ -47,22 +56,41 @@ public class WorkReportController {
     @Operation(summary = "工序报工")
     @PostMapping
     public Result<?> report(@RequestBody WorkReport report) {
+        // 默认值
+        if (report.getReportType() == null) report.setReportType("NORMAL");
+        if (report.getQualifiedQty() == null) report.setQualifiedQty(BigDecimal.ZERO);
+        if (report.getScrapQty() == null) report.setScrapQty(BigDecimal.ZERO);
+        if (report.getQuantity() == null) {
+            report.setQuantity(report.getQualifiedQty().add(report.getScrapQty()));
+        }
         service.save(report);
 
         // 更新工序进度
         if (report.getWorkOrderProcessId() != null) {
             WorkOrderProcess wp = processMapper.selectById(report.getWorkOrderProcessId());
             if (wp != null) {
-                wp.setFinishedQty((wp.getFinishedQty() != null ? wp.getFinishedQty() : BigDecimal.ZERO)
-                        .add(report.getQuantity()));
-                wp.setQualifiedQty((wp.getQualifiedQty() != null ? wp.getQualifiedQty() : BigDecimal.ZERO)
-                        .add(report.getQualifiedQty() != null ? report.getQualifiedQty() : BigDecimal.ZERO));
-                wp.setScrapQty((wp.getScrapQty() != null ? wp.getScrapQty() : BigDecimal.ZERO)
-                        .add(report.getScrapQty() != null ? report.getScrapQty() : BigDecimal.ZERO));
-                wp.setStatus(2); // 加工中
+                // 设置状态为加工中
+                if (wp.getStatus() == null || wp.getStatus() == 1) {
+                    wp.setStatus(2);
+                    if (wp.getStartTime() == null) {
+                        wp.setStartTime(java.time.LocalDateTime.now());
+                    }
+                }
+                wp.setFinishedQty(safe(wp.getFinishedQty()).add(report.getQuantity()));
+                wp.setQualifiedQty(safe(wp.getQualifiedQty()).add(report.getQualifiedQty()));
+                wp.setScrapQty(safe(wp.getScrapQty()).add(report.getScrapQty()));
+                // 工序完成判定：完成数 >= 计划数
+                if (wp.getPlanQty() != null && wp.getFinishedQty().compareTo(wp.getPlanQty()) >= 0) {
+                    wp.setStatus(3);
+                    wp.setEndTime(java.time.LocalDateTime.now());
+                }
                 processMapper.updateById(wp);
             }
         }
         return Result.ok();
+    }
+
+    private BigDecimal safe(BigDecimal val) {
+        return val != null ? val : BigDecimal.ZERO;
     }
 }

@@ -27,6 +27,10 @@ public class DashboardService {
     @Autowired private WorkOrderMapper workOrderMapper;
     @Autowired private InventoryMapper inventoryMapper;
     @Autowired private InventoryTransactionMapper transactionMapper;
+    @Autowired private com.itheima.mes1.module.production.mapper.WorkReportMapper workReportMapper;
+    @Autowired private com.itheima.mes1.module.production.mapper.QcRecordMapper qcRecordMapper;
+    @Autowired private com.itheima.mes1.module.base.mapper.ProductMapper productMapper;
+    @Autowired private com.itheima.mes1.module.base.mapper.ProcessMapper processMapper;
 
     // ==================== 首页概览卡片 ====================
 
@@ -242,9 +246,11 @@ public class DashboardService {
 
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("period", days);
-        data.put("outboundQty", outQty);
+        data.put("outboundQty", outQty);       // 兼容 BiOverview
+        data.put("totalOutbound", outQty);     // 兼容 Dashboard
         data.put("inboundQty", inQty);
-        data.put("avgStock", avgStock);
+        data.put("avgStock", avgStock);        // 兼容 BiOverview
+        data.put("avgInventory", avgStock);    // 兼容 Dashboard
         data.put("turnoverRate", turnoverRate);
         data.put("turnoverDays", turnoverDays);
         data.put("daysGrowth", 0); // 环比变化（简化处理）
@@ -254,21 +260,30 @@ public class DashboardService {
     // ==================== 库存结构分析 ====================
 
     public Map<String, Object> inventoryStructure() {
-        // 按仓库分布
-        List<Map<String, Object>> byWarehouse = inventoryMapper.selectWarehouseStructure();
+        // 按仓库分布（原始 SQL 返回下划线 key）
+        List<Map<String, Object>> rawRows = inventoryMapper.selectWarehouseStructure();
 
-        // 总数汇总
+        // 总数汇总 + 转换为前端期望的驼峰 key
         long totalSku = 0;
         BigDecimal totalQty = BigDecimal.ZERO;
-        for (Map<String, Object> row : byWarehouse) {
+        List<Map<String, Object>> warehouses = new ArrayList<>();
+        for (Map<String, Object> row : rawRows) {
             totalSku += ((Number) row.get("sku_count")).longValue();
             totalQty = totalQty.add((BigDecimal) row.get("total_quantity"));
+            Map<String, Object> w = new LinkedHashMap<>();
+            w.put("name", row.get("warehouse_name"));
+            w.put("warehouseName", row.get("warehouse_name"));
+            w.put("quantity", row.get("total_quantity"));
+            w.put("skuCount", row.get("sku_count"));
+            w.put("warehouseId", row.get("warehouse_id"));
+            warehouses.add(w);
         }
 
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("totalSku", totalSku);
         data.put("totalQuantity", totalQty);
-        data.put("byWarehouse", byWarehouse);
+        data.put("byWarehouse", rawRows);    // 兼容旧调用
+        data.put("warehouses", warehouses);  // Dashboard / BiOverview 通用
         return data;
     }
 
@@ -301,6 +316,160 @@ public class DashboardService {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("products", products);
         data.put("customers", customers);
+        return data;
+    }
+
+    // ==================== MES 车间驾驶舱 ====================
+
+    public Map<String, Object> mesSummary() {
+        Map<String, Object> data = new LinkedHashMap<>();
+
+        LocalDate today = LocalDate.now();
+        LocalDateTime todayStart = today.atStartOfDay();
+
+        // KPI 卡片
+        long inProgressOrders = workOrderMapper.selectCount(
+                new LambdaQueryWrapper<WorkOrder>().eq(WorkOrder::getStatus, 2));
+        long pendingOrders = workOrderMapper.selectCount(
+                new LambdaQueryWrapper<WorkOrder>().eq(WorkOrder::getStatus, 1));
+
+        // 今日报工汇总
+        List<com.itheima.mes1.module.production.entity.WorkReport> todayReports =
+                workReportMapper.selectList(
+                        new LambdaQueryWrapper<com.itheima.mes1.module.production.entity.WorkReport>()
+                                .ge(com.itheima.mes1.module.production.entity.WorkReport::getCreateTime, todayStart));
+        BigDecimal todayOutput = BigDecimal.ZERO;
+        BigDecimal todayDefect = BigDecimal.ZERO;
+        for (var r : todayReports) {
+            if (r.getQuantity() != null) todayOutput = todayOutput.add(r.getQuantity());
+            if (r.getScrapQty() != null) todayDefect = todayDefect.add(r.getScrapQty());
+        }
+        BigDecimal defectRate = todayOutput.compareTo(BigDecimal.ZERO) > 0
+                ? todayDefect.divide(todayOutput, 4, RoundingMode.HALF_UP).multiply(new BigDecimal("100"))
+                : BigDecimal.ZERO;
+
+        data.put("inProgressOrders", inProgressOrders);
+        data.put("pendingOrders", pendingOrders);
+        data.put("todayOutput", todayOutput);
+        data.put("todayDefect", todayDefect);
+        data.put("defectRate", defectRate.setScale(1, RoundingMode.HALF_UP));
+
+        // 生产进度（进行中工单）
+        List<WorkOrder> activeOrders = workOrderMapper.selectList(
+                new LambdaQueryWrapper<WorkOrder>().in(WorkOrder::getStatus, 1, 2));
+        List<Map<String, Object>> orderProgress = new ArrayList<>();
+        for (WorkOrder wo : activeOrders) {
+            WorkOrder full = workOrderMapper.selectWithProduct(wo.getId());
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("orderNo", wo.getOrderNo());
+            item.put("productName", full != null ? full.getProductName() : "");
+            item.put("quantity", wo.getQuantity());
+            item.put("finishedQty", wo.getFinishedQty());
+            item.put("status", wo.getStatus());
+            item.put("progress", computeProgress(wo.getQuantity(), wo.getFinishedQty()));
+            item.put("planEnd", wo.getPlanEnd());
+            orderProgress.add(item);
+        }
+        data.put("orderProgress", orderProgress);
+
+        // 不良原因分布（最近30天）
+        LocalDate days30Ago = today.minusDays(30);
+        List<com.itheima.mes1.module.production.entity.QcRecord> qcRecords =
+                qcRecordMapper.selectList(
+                        new LambdaQueryWrapper<com.itheima.mes1.module.production.entity.QcRecord>()
+                                .ge(com.itheima.mes1.module.production.entity.QcRecord::getCheckDate, days30Ago)
+                                .le(com.itheima.mes1.module.production.entity.QcRecord::getCheckDate, today));
+        Map<String, Long> causeCount = new LinkedHashMap<>();
+        for (var qc : qcRecords) {
+            if (qc.getNgDescription() != null && !qc.getNgDescription().isBlank()) {
+                causeCount.merge(qc.getNgDescription(), 1L, Long::sum);
+            }
+        }
+        List<Map<String, Object>> defectCauseList = new ArrayList<>();
+        causeCount.entrySet().stream()
+                .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
+                .limit(10)
+                .forEach(e -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("cause", e.getKey());
+                    m.put("count", e.getValue());
+                    defectCauseList.add(m);
+                });
+        data.put("defectCauseList", defectCauseList);
+
+        // 产量趋势（最近7天）
+        List<Map<String, Object>> productionTrend = new ArrayList<>();
+        for (int i = 6; i >= 0; i--) {
+            LocalDate d = today.minusDays(i);
+            LocalDateTime dayStart = d.atStartOfDay();
+            LocalDateTime dayEnd = d.plusDays(1).atStartOfDay();
+            List<com.itheima.mes1.module.production.entity.WorkReport> dayReports =
+                    workReportMapper.selectList(
+                            new LambdaQueryWrapper<com.itheima.mes1.module.production.entity.WorkReport>()
+                                    .ge(com.itheima.mes1.module.production.entity.WorkReport::getCreateTime, dayStart)
+                                    .lt(com.itheima.mes1.module.production.entity.WorkReport::getCreateTime, dayEnd));
+            BigDecimal dayTotal = BigDecimal.ZERO;
+            for (var r : dayReports) {
+                if (r.getQuantity() != null) dayTotal = dayTotal.add(r.getQuantity());
+            }
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("date", d.toString());
+            m.put("output", dayTotal);
+            productionTrend.add(m);
+        }
+        data.put("productionTrend", productionTrend);
+
+        // 最近报工记录（最近10条）
+        List<com.itheima.mes1.module.production.entity.WorkReport> recentReports =
+                workReportMapper.selectList(
+                        new LambdaQueryWrapper<com.itheima.mes1.module.production.entity.WorkReport>()
+                                .orderByDesc(com.itheima.mes1.module.production.entity.WorkReport::getCreateTime)
+                                .last("LIMIT 10"));
+        List<Map<String, Object>> recentReportList = new ArrayList<>();
+        for (var r : recentReports) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("id", r.getId());
+            item.put("workOrderId", r.getWorkOrderId());
+            item.put("worker", r.getWorker());
+            item.put("quantity", r.getQuantity());
+            item.put("qualifiedQty", r.getQualifiedQty());
+            item.put("scrapQty", r.getScrapQty());
+            item.put("defectReason", r.getDefectReason());
+            item.put("reportDate", r.getReportDate());
+            if (r.getProductId() != null) {
+                var p = productMapper.selectById(r.getProductId());
+                item.put("productName", p != null ? p.getName() : "");
+            }
+            if (r.getProcessId() != null) {
+                var proc = processMapper.selectById(r.getProcessId());
+                item.put("processName", proc != null ? proc.getName() : "");
+            }
+            if (r.getWorkOrderId() != null) {
+                var wo = workOrderMapper.selectById(r.getWorkOrderId());
+                item.put("orderNo", wo != null ? wo.getOrderNo() : "");
+            }
+            recentReportList.add(item);
+        }
+        data.put("recentReportList", recentReportList);
+
+        // 待处理工单
+        List<WorkOrder> pendingOrdersList = workOrderMapper.selectList(
+                new LambdaQueryWrapper<WorkOrder>().eq(WorkOrder::getStatus, 1)
+                        .orderByDesc(WorkOrder::getCreateTime).last("LIMIT 10"));
+        List<Map<String, Object>> pendingOrderList = new ArrayList<>();
+        for (WorkOrder wo : pendingOrdersList) {
+            WorkOrder full = workOrderMapper.selectWithProduct(wo.getId());
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("id", wo.getId());
+            item.put("orderNo", wo.getOrderNo());
+            item.put("productName", full != null ? full.getProductName() : "");
+            item.put("quantity", wo.getQuantity());
+            item.put("planStart", wo.getPlanStart());
+            item.put("planEnd", wo.getPlanEnd());
+            pendingOrderList.add(item);
+        }
+        data.put("pendingOrderList", pendingOrderList);
+
         return data;
     }
 

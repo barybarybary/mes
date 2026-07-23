@@ -16,6 +16,7 @@ public class QcRecord {
     private String type;
     private Long productId;
     private Long workOrderId;
+    private Long workOrderProcessId;
     private String batchNo;
     private BigDecimal checkQty;
     private BigDecimal okQty;

@@ -16,7 +16,12 @@
 
     <!-- 产品列表 -->
     <div class="max-w-6xl mx-auto px-4 py-10">
-      <h2 class="text-xl font-bold text-slate-800 mb-6">推荐产品</h2>
+      <!-- 分类标签 -->
+      <div class="flex flex-wrap gap-2 mb-6">
+        <button @click="filterCategory(null)" :class="!cid ? 'bg-sky-500 text-white' : 'bg-white text-slate-600 border-slate-200'" class="px-4 py-1.5 rounded-full text-sm border">全部</button>
+        <button v-for="c in categories" :key="c.id" @click="filterCategory(c.id)" :class="cid === c.id ? 'bg-sky-500 text-white' : 'bg-white text-slate-600 border-slate-200'" class="px-4 py-1.5 rounded-full text-sm border">{{ c.name }}</button>
+      </div>
+      <h2 class="text-xl font-bold text-slate-800 mb-6">{{ cid ? '分类产品' : '推荐产品' }}</h2>
       <div v-if="loading" class="text-center py-10 text-slate-400">加载中...</div>
       <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         <ProductCard v-for="p in products" :key="p.id" :product="p" />
@@ -32,13 +37,31 @@ import PortalNavbar from './PortalNavbar.vue'
 import ProductCard from './ProductCard.vue'
 
 const products = ref([])
+const categories = ref([])
+const cid = ref(null)
 const loading = ref(true)
 
 onMounted(async () => {
   try {
-    const res = await api.get('/products', { params: { page: 1, pageSize: 8 } })
+    const [catRes] = await Promise.all([api.get('/categories')])
+    categories.value = catRes.data || []
+  } catch { /* ignore */ }
+  fetchProducts()
+})
+
+async function fetchProducts() {
+  loading.value = true
+  try {
+    const params = { page: 1, pageSize: 8 }
+    if (cid.value) params.categoryId = cid.value
+    const res = await api.get('/products', { params })
     products.value = res.data?.list || []
   } catch { /* ignore */ }
   finally { loading.value = false }
-})
+}
+
+function filterCategory(id) {
+  cid.value = id
+  fetchProducts()
+}
 </script>

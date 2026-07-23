@@ -1,9 +1,9 @@
 <template>
-  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-    <div class="px-6 py-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+    <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <h2 class="text-lg font-semibold text-slate-800">质检管理</h2>
-        <p class="text-xs text-slate-400 mt-1">管理质检记录和质量追溯</p>
+        <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-200">质检管理</h2>
+        <p class="text-xs text-slate-400 dark:text-slate-300 mt-1">管理质检记录和质量追溯</p>
       </div>
       <el-button type="primary" @click="openDialog()" class="h-10 px-5 rounded-xl font-medium">
         <el-icon class="mr-1"><Plus /></el-icon>新增记录

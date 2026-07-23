@@ -3,10 +3,10 @@ package com.itheima.mes1.common.mq;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Base64;
@@ -18,14 +18,18 @@ import java.util.UUID;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class MessageSender {
 
-    private final RabbitTemplate rabbitTemplate;
+    @Autowired(required = false)
+    private RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @PostConstruct
     public void init() {
+        if (rabbitTemplate == null) {
+            log.warn("RabbitMQ 不可用，消息发送功能已禁用");
+            return;
+        }
         // 发布确认回调：记录投递失败的消息
         rabbitTemplate.setConfirmCallback((CorrelationData correlationData, boolean ack, String cause) -> {
             if (!ack) {
@@ -43,6 +47,7 @@ public class MessageSender {
 
     /** 发送通用消息到指定交换机和路由键 */
     public void send(String exchange, String routingKey, MqMessage message) {
+        if (rabbitTemplate == null) { log.debug("RabbitMQ 不可用，消息跳过: {}", message.getEventType()); return; }
         if (message.getTraceId() == null) {
             message.setTraceId(UUID.randomUUID().toString().replace("-", ""));
         }

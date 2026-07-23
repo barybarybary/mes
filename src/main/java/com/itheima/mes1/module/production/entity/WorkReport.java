@@ -1,6 +1,7 @@
 package com.itheima.mes1.module.production.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -21,8 +22,16 @@ public class WorkReport {
     private BigDecimal quantity;
     private BigDecimal qualifiedQty;
     private BigDecimal scrapQty;
+    private String defectReason;
+    private String reportType;
+    private Long equipmentId;
     private BigDecimal workHours;
     private LocalDate reportDate;
     private String remark;
     private LocalDateTime createTime;
+
+    @TableField(exist = false)
+    private String workOrderNo;
+    @TableField(exist = false)
+    private String processName;
 }

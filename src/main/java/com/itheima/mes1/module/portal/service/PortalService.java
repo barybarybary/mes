@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.itheima.mes1.common.exception.BusinessException;
 import com.itheima.mes1.module.base.entity.Product;
+import com.itheima.mes1.module.base.entity.ProductCategory;
+import com.itheima.mes1.module.base.mapper.ProductCategoryMapper;
 import com.itheima.mes1.module.base.mapper.ProductMapper;
 import com.itheima.mes1.module.inventory.mapper.InventoryMapper;
 import com.itheima.mes1.module.portal.dto.PlaceOrderReq;
@@ -39,6 +41,7 @@ public class PortalService {
     @Autowired private SaleOrderMapper saleOrderMapper;
     @Autowired private SaleOrderItemMapper saleOrderItemMapper;
     @Autowired private InventoryMapper inventoryMapper;
+    @Autowired private ProductCategoryMapper categoryMapper;
     @Autowired private RedisTemplate<String, Object> redisTemplate;
     @Autowired private BCryptPasswordEncoder passwordEncoder;
 
@@ -102,14 +105,24 @@ public class PortalService {
                 .orderByDesc(Product::getCreateTime);
 
         Page<Product> result = productMapper.selectPage(new Page<>(page, pageSize), w);
+        // 预加载所有分类，建立 id→name 映射
+        Map<Long, String> categoryMap = categoryMapper.selectList(null).stream()
+                .collect(Collectors.toMap(ProductCategory::getId, ProductCategory::getName));
         Page<ProductCatalogVO> voPage = new Page<>(page, pageSize);
         voPage.setTotal(result.getTotal());
         voPage.setRecords(result.getRecords().stream().map(p -> {
             ProductCatalogVO vo = new ProductCatalogVO();
             BeanUtils.copyProperties(p, vo);
+            vo.setCategoryName(categoryMap.get(p.getCategoryId()));
             return vo;
         }).collect(Collectors.toList()));
         return voPage;
+    }
+
+    public List<Map<String, Object>> listCategories() {
+        return categoryMapper.selectList(null).stream()
+                .map(c -> Map.<String, Object>of("id", c.getId(), "name", c.getName()))
+                .collect(Collectors.toList());
     }
 
     public ProductDetailVO getProductDetail(Long id) {

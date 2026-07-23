@@ -6,7 +6,6 @@ server:
 spring:
   application:
     name: ZaoYi
-
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: Asia/Shanghai
@@ -60,7 +59,7 @@ spring:
     # 消费端手动确认
     listener:
       simple:
-        auto-startup: ${MES_RABBITMQ_ENABLED:true}
+        auto-startup: ${MES_RABBITMQ_ENABLED:false}
         acknowledge-mode: manual
         prefetch: 5
         retry:
@@ -116,6 +115,8 @@ management:
   health:
     mail:
       enabled: false   # 邮件未配置时关闭，否则健康检查会报错
+    rabbit:
+      enabled: false   # 本地开发无 RabbitMQ，关闭健康检查
 
 # 日志配置
 logging:
@@ -123,7 +124,7 @@ logging:
     root: INFO
     com.itheima.mes1: INFO
     # 抑制 RabbitMQ/Druid 的连接重试噪音
-    org.springframework.amqp.rabbit: WARN
+    org.springframework.amqp.rabbit: ERROR
     com.alibaba.druid: WARN
   file:
     name: logs/mes1.log

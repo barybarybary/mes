@@ -3,59 +3,59 @@
     <!-- 统计卡片行 -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
       <!-- 总用户数 -->
-      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 card-hover flex items-center gap-4">
+      <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 card-hover flex items-center gap-4">
         <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(14,165,233,0.1);">
           <el-icon :size="22" color="#0ea5e9"><User /></el-icon>
         </div>
         <div>
-          <p class="text-2xl font-bold text-slate-800 leading-none">{{ total }}</p>
-          <p class="text-xs text-slate-400 mt-1.5">总用户数</p>
+          <p class="text-2xl font-bold text-slate-800 dark:text-slate-200 leading-none">{{ total }}</p>
+          <p class="text-xs text-slate-400 dark:text-slate-300 mt-1.5">总用户数</p>
         </div>
       </div>
 
       <!-- 启用用户 -->
-      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 card-hover flex items-center gap-4">
+      <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 card-hover flex items-center gap-4">
         <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(16,185,129,0.1);">
           <el-icon :size="22" color="#10b981"><Select /></el-icon>
         </div>
         <div>
-          <p class="text-2xl font-bold text-slate-800 leading-none">{{ list.filter(u => u.status === 1).length }}</p>
-          <p class="text-xs text-slate-400 mt-1.5">已启用</p>
+          <p class="text-2xl font-bold text-slate-800 dark:text-slate-200 leading-none">{{ enabledCount }}</p>
+          <p class="text-xs text-slate-400 dark:text-slate-300 mt-1.5">已启用</p>
         </div>
       </div>
 
       <!-- 禁用用户 -->
-      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 card-hover flex items-center gap-4">
+      <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 card-hover flex items-center gap-4">
         <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(245,158,11,0.1);">
           <el-icon :size="22" color="#f59e0b"><CircleClose /></el-icon>
         </div>
         <div>
-          <p class="text-2xl font-bold text-slate-800 leading-none">{{ list.filter(u => u.status === 0).length }}</p>
-          <p class="text-xs text-slate-400 mt-1.5">已禁用</p>
+          <p class="text-2xl font-bold text-slate-800 dark:text-slate-200 leading-none">{{ disabledCount }}</p>
+          <p class="text-xs text-slate-400 dark:text-slate-300 mt-1.5">已禁用</p>
         </div>
       </div>
 
       <!-- 管理员数量 -->
-      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 card-hover flex items-center gap-4">
+      <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 card-hover flex items-center gap-4">
         <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(139,92,246,0.1);">
           <el-icon :size="22" color="#8b5cf6"><Avatar /></el-icon>
         </div>
         <div>
-          <p class="text-2xl font-bold text-slate-800 leading-none">{{ list.filter(u => u.role === 'admin' || u.roleName === 'admin').length }}</p>
-          <p class="text-xs text-slate-400 mt-1.5">管理员</p>
+          <p class="text-2xl font-bold text-slate-800 dark:text-slate-200 leading-none">{{ adminCount }}</p>
+          <p class="text-xs text-slate-400 dark:text-slate-300 mt-1.5">管理员</p>
         </div>
       </div>
     </div>
 
     <!-- 主内容卡片 -->
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
       <!-- 头部 -->
-      <div class="px-6 py-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div class="flex items-start gap-3">
           <span class="w-1 h-6 rounded-full bg-gradient-to-b from-sky-400 to-blue-600 mt-1 shrink-0"></span>
           <div>
-            <h2 class="text-lg font-semibold text-slate-800">用户管理</h2>
-            <p class="text-xs text-slate-400 mt-1">管理系统用户账号和权限</p>
+            <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-200">用户管理</h2>
+            <p class="text-xs text-slate-400 dark:text-slate-300 mt-1">管理系统用户账号和权限</p>
           </div>
         </div>
         <div class="flex items-center gap-3">
@@ -67,7 +67,7 @@
             @change="fetchData"
           >
             <template #prefix>
-              <el-icon class="text-slate-400"><Search /></el-icon>
+              <el-icon class="text-slate-400 dark:text-slate-300"><Search /></el-icon>
             </template>
           </el-input>
           <el-button type="primary" @click="openDialog()" class="h-10 px-5 rounded-xl font-medium shadow-lg shadow-sky-500/20">
@@ -88,7 +88,7 @@
                      :class="avatarGradient(row.id)">
                   {{ row.username?.charAt(0).toUpperCase() }}
                 </div>
-                <span class="font-medium text-slate-700">{{ row.username }}</span>
+                <span class="font-medium text-slate-700 dark:text-slate-600">{{ row.username }}</span>
               </div>
             </template>
           </el-table-column>
@@ -103,7 +103,7 @@
                   :class="{ 'ml-1': i > 0 }"
                 >{{ r }}</span>
               </template>
-              <span v-else class="text-xs text-slate-400">-</span>
+              <span v-else class="text-xs text-slate-400 dark:text-slate-300">-</span>
             </template>
           </el-table-column>
           <el-table-column prop="phone" label="手机号" width="140" />
@@ -111,7 +111,7 @@
           <el-table-column prop="status" label="状态" width="110" align="center">
             <template #default="{ row }">
               <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
-                    :class="row.status === 1 ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'">
+                    :class="row.status === 1 ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300'">
                 <span class="w-1.5 h-1.5 rounded-full"
                       :class="row.status === 1 ? 'bg-emerald-400' : 'bg-slate-400'"></span>
                 {{ row.status === 1 ? '启用' : '禁用' }}
@@ -149,7 +149,7 @@
           <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-sky-500/30 ring-4 ring-sky-50">
             {{ form.username?.charAt(0).toUpperCase() || 'U' }}
           </div>
-          <p class="text-xs text-slate-400 mt-2">编辑用户 {{ form.username }}</p>
+          <p class="text-xs text-slate-400 dark:text-slate-300 mt-2">编辑用户 {{ form.username }}</p>
         </div>
 
         <el-form :model="form" label-width="80px" label-position="right">
@@ -158,7 +158,7 @@
               <el-form-item label="用户名">
                 <el-input v-model="form.username" placeholder="请输入用户名">
                   <template #prefix>
-                    <el-icon class="text-slate-400"><User /></el-icon>
+                    <el-icon class="text-slate-400 dark:text-slate-300"><User /></el-icon>
                   </template>
                 </el-input>
               </el-form-item>
@@ -167,7 +167,7 @@
               <el-form-item label="密码">
                 <el-input v-model="form.password" type="password" :placeholder="editing.id ? '留空则不修改' : '请输入密码'" show-password>
                   <template #prefix>
-                    <el-icon class="text-slate-400"><Lock /></el-icon>
+                    <el-icon class="text-slate-400 dark:text-slate-300"><Lock /></el-icon>
                   </template>
                 </el-input>
               </el-form-item>
@@ -178,7 +178,7 @@
               <el-form-item label="昵称">
                 <el-input v-model="form.nickname" placeholder="请输入昵称">
                   <template #prefix>
-                    <el-icon class="text-slate-400"><User /></el-icon>
+                    <el-icon class="text-slate-400 dark:text-slate-300"><User /></el-icon>
                   </template>
                 </el-input>
               </el-form-item>
@@ -187,7 +187,7 @@
               <el-form-item label="手机号">
                 <el-input v-model="form.phone" placeholder="请输入手机号">
                   <template #prefix>
-                    <el-icon class="text-slate-400"><Phone /></el-icon>
+                    <el-icon class="text-slate-400 dark:text-slate-300"><Phone /></el-icon>
                   </template>
                 </el-input>
               </el-form-item>
@@ -196,14 +196,14 @@
           <el-form-item label="邮箱">
             <el-input v-model="form.email" placeholder="请输入邮箱">
               <template #prefix>
-                <el-icon class="text-slate-400"><Message /></el-icon>
+                <el-icon class="text-slate-400 dark:text-slate-300"><Message /></el-icon>
               </template>
             </el-input>
           </el-form-item>
           <el-form-item label="状态">
-            <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 w-full">
+            <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 w-full">
               <el-switch v-model="form.status" :active-value="1" :inactive-value="0" />
-              <span class="text-sm font-medium" :class="form.status === 1 ? 'text-emerald-600' : 'text-slate-500'">
+              <span class="text-sm font-medium" :class="form.status === 1 ? 'text-emerald-600' : 'text-slate-500 dark:text-slate-300'">
                 {{ form.status === 1 ? '账号已启用' : '账号已禁用' }}
               </span>
             </div>
@@ -225,9 +225,9 @@
           <el-checkbox-group v-model="checkedRoles" class="flex flex-col gap-2.5">
             <el-checkbox v-for="r in roles" :key="r.id" :value="r.id" class="!mr-0">
               <div class="flex items-center gap-3 py-2 px-4 rounded-xl border-2 transition-all duration-150 w-full"
-                   :class="checkedRoles.includes(r.id) ? 'border-sky-400 bg-sky-50/50' : 'border-slate-100 hover:border-slate-200 bg-white'">
-                <span class="font-medium text-slate-700 text-sm">{{ r.name }}</span>
-                <span class="text-xs text-slate-400 font-mono">{{ r.code }}</span>
+                   :class="checkedRoles.includes(r.id) ? 'border-sky-400 bg-sky-50/50' : 'border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'">
+                <span class="font-medium text-slate-700 dark:text-slate-600 text-sm">{{ r.name }}</span>
+                <span class="text-xs text-slate-400 dark:text-slate-300 font-mono">{{ r.code }}</span>
               </div>
             </el-checkbox>
           </el-checkbox-group>
@@ -248,6 +248,7 @@ import { Search, Plus, User, Lock, Phone, Message, Select, CircleClose, Avatar, 
 import api from '@/api'
 
 const list = ref([]), loading = ref(false), page = ref(1), total = ref(0), pageSize = ref(10), keyword = ref('')
+const adminCount = ref(0), enabledCount = ref(0), disabledCount = ref(0)
 const dialogVisible = ref(false), editing = ref({}), form = reactive({})
 const roleDialogVisible = ref(false), roleUserId = ref(), checkedRoles = ref([]), roles = ref([])
 
@@ -281,7 +282,12 @@ async function fetchData() {
   loading.value = true
   try {
     const res = await api.get('/system/user', { params: { page: page.value, pageSize: pageSize.value, keyword: keyword.value } })
-    if (res.code === 200) { list.value = res.data.list; total.value = res.data.total }
+    if (res.code === 200) {
+      list.value = res.data.list; total.value = res.data.total
+      adminCount.value = res.data.adminCount ?? 0
+      enabledCount.value = res.data.enabledCount ?? 0
+      disabledCount.value = res.data.disabledCount ?? 0
+    }
   } finally { loading.value = false }
 }
 

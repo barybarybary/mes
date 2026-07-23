@@ -46,10 +46,10 @@ public class RabbitMQConfig {
         return QueueBuilder.durable("mes.mail.dlq").build();
     }
 
-    /** 告警/事件队列 — 无 DLQ（下次 cron 扫描会重新生成） */
+    /** 工单事件队列 — 无需 DLQ（事件丢失可接受） */
     @Bean
-    public Queue alertQueue() {
-        return QueueBuilder.durable("mes.alert.queue").build();
+    public Queue workOrderQueue() {
+        return QueueBuilder.durable("mes.workorder.queue").build();
     }
 
     /** 审计日志队列 — 带 DLQ */
@@ -75,13 +75,8 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Binding alertBinding() {
-        return BindingBuilder.bind(alertQueue()).to(eventExchange()).with("alert.*");
-    }
-
-    @Bean
-    public Binding notifyBinding() {
-        return BindingBuilder.bind(alertQueue()).to(eventExchange()).with("notify.#");
+    public Binding workOrderBinding() {
+        return BindingBuilder.bind(workOrderQueue()).to(eventExchange()).with("notify.workorder.#");
     }
 
     @Bean

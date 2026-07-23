@@ -17,7 +17,15 @@ api.interceptors.request.use(config => {
 
 // 响应拦截
 api.interceptors.response.use(
-  res => res.data,
+  res => {
+    const body = res.data
+    // 业务错误（HTTP 200 但 code 非 200）
+    if (body && body.code !== 200) {
+      ElMessage.error(body.message || '请求失败')
+      return Promise.reject(new Error(body.message || '请求失败'))
+    }
+    return body
+  },
   err => {
     ElMessage.error(err.response?.data?.message || '请求失败')
     if (err.response?.status === 401) {

@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <!-- Hero 头部卡片 -->
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 sm:p-6">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-5 sm:p-6">
       <div class="flex flex-col sm:flex-row items-center sm:items-start gap-5">
         <!-- 头像 -->
         <div class="w-20 h-20 sm:w-22 sm:h-22 rounded-full bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center text-white text-3xl font-bold shadow-lg shadow-sky-500/30 ring-4 ring-sky-50 shrink-0">
@@ -10,20 +10,20 @@
 
         <!-- 中间信息 -->
         <div class="flex-1 min-w-0 text-center sm:text-left">
-          <h2 class="text-xl sm:text-2xl font-bold text-slate-800">
+          <h2 class="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-200">
             {{ displayNickname || user?.username || '未设置' }}
           </h2>
-          <div class="flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-1 mt-2 text-sm text-slate-500">
+          <div class="flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-1 mt-2 text-sm text-slate-500 dark:text-slate-300">
             <span class="inline-flex items-center gap-1.5">
-              <el-icon :size="14" class="text-slate-400"><User /></el-icon>
+              <el-icon :size="14" class="text-slate-400 dark:text-slate-300"><User /></el-icon>
               {{ user?.username || '-' }}
             </span>
             <span v-if="user?.email" class="inline-flex items-center gap-1.5">
-              <el-icon :size="14" class="text-slate-400"><Message /></el-icon>
+              <el-icon :size="14" class="text-slate-400 dark:text-slate-300"><Message /></el-icon>
               {{ user.email }}
             </span>
             <span v-if="user?.phone" class="inline-flex items-center gap-1.5">
-              <el-icon :size="14" class="text-slate-400"><Phone /></el-icon>
+              <el-icon :size="14" class="text-slate-400 dark:text-slate-300"><Phone /></el-icon>
               {{ user.phone }}
             </span>
             <span v-if="roles.length" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-sky-50 text-sky-600 border border-sky-100">
@@ -41,40 +41,40 @@
 
     <!-- 统计卡片行 -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 card-hover flex items-center gap-4">
+      <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 card-hover flex items-center gap-4">
         <div class="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
           <el-icon :size="20" color="#7c3aed"><Avatar /></el-icon>
         </div>
         <div>
-          <p class="text-xl font-bold text-slate-800 leading-none">{{ roles.length }}</p>
-          <p class="text-xs text-slate-400 mt-1.5">角色</p>
+          <p class="text-xl font-bold text-slate-800 dark:text-slate-200 leading-none">{{ roles.length }}</p>
+          <p class="text-xs text-slate-400 dark:text-slate-300 mt-1.5">角色</p>
         </div>
       </div>
-      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 card-hover flex items-center gap-4">
+      <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 card-hover flex items-center gap-4">
         <div class="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
           <el-icon :size="20" color="#059669"><Key /></el-icon>
         </div>
         <div>
-          <p class="text-xl font-bold text-slate-800 leading-none">{{ permissions.length }}</p>
-          <p class="text-xs text-slate-400 mt-1.5">权限</p>
+          <p class="text-xl font-bold text-slate-800 dark:text-slate-200 leading-none">{{ permissions.length }}</p>
+          <p class="text-xs text-slate-400 dark:text-slate-300 mt-1.5">权限</p>
         </div>
       </div>
-      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 card-hover flex items-center gap-4">
+      <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 card-hover flex items-center gap-4">
         <div class="w-10 h-10 rounded-xl bg-sky-100 flex items-center justify-center shrink-0">
           <el-icon :size="20" color="#0284c7"><Calendar /></el-icon>
         </div>
         <div>
-          <p class="text-sm font-medium text-slate-700 leading-none truncate max-w-[100px]">{{ user?.createTime || '-' }}</p>
-          <p class="text-xs text-slate-400 mt-1.5">注册时间</p>
+          <p class="text-sm font-medium text-slate-700 dark:text-slate-600 leading-none truncate max-w-[100px]">{{ user?.createTime || '-' }}</p>
+          <p class="text-xs text-slate-400 dark:text-slate-300 mt-1.5">注册时间</p>
         </div>
       </div>
-      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 card-hover flex items-center gap-4">
+      <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 card-hover flex items-center gap-4">
         <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
           <el-icon :size="20" color="#d97706"><Clock /></el-icon>
         </div>
         <div>
-          <p class="text-sm font-medium text-slate-700 leading-none truncate max-w-[100px]">{{ user?.lastLoginTime || '首次登录' }}</p>
-          <p class="text-xs text-slate-400 mt-1.5">最后登录</p>
+          <p class="text-sm font-medium text-slate-700 dark:text-slate-600 leading-none truncate max-w-[100px]">{{ user?.lastLoginTime || '首次登录' }}</p>
+          <p class="text-xs text-slate-400 dark:text-slate-300 mt-1.5">最后登录</p>
         </div>
       </div>
     </div>
@@ -84,46 +84,46 @@
       <!-- 左栏 -->
       <div class="lg:col-span-2 space-y-6">
         <!-- 基本资料 -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <div class="px-5 sm:px-6 py-4 border-b border-slate-50">
-            <h3 class="text-base font-semibold text-slate-800 flex items-center gap-2.5">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+          <div class="px-5 sm:px-6 py-4 border-b border-slate-50 dark:border-slate-800">
+            <h3 class="text-base font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2.5">
               <el-icon :size="18" color="#64748b"><User /></el-icon>基本资料
             </h3>
           </div>
           <div class="p-5 sm:p-6">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
-              <div class="flex items-center justify-between py-2 border-b border-slate-50">
-                <span class="text-sm text-slate-400">用户名</span>
-                <span class="text-sm font-medium text-slate-700">{{ user?.username || '-' }}</span>
+              <div class="flex items-center justify-between py-2 border-b border-slate-50 dark:border-slate-800">
+                <span class="text-sm text-slate-400 dark:text-slate-300">用户名</span>
+                <span class="text-sm font-medium text-slate-700 dark:text-slate-600">{{ user?.username || '-' }}</span>
               </div>
-              <div class="flex items-center justify-between py-2 border-b border-slate-50">
-                <span class="text-sm text-slate-400">昵称</span>
-                <span class="text-sm font-medium text-slate-700">{{ displayNickname || '-' }}</span>
+              <div class="flex items-center justify-between py-2 border-b border-slate-50 dark:border-slate-800">
+                <span class="text-sm text-slate-400 dark:text-slate-300">昵称</span>
+                <span class="text-sm font-medium text-slate-700 dark:text-slate-600">{{ displayNickname || '-' }}</span>
               </div>
-              <div class="flex items-center justify-between py-2 border-b border-slate-50">
-                <span class="text-sm text-slate-400">邮箱</span>
-                <span class="text-sm font-medium text-slate-700 truncate max-w-[160px]">{{ user?.email || '-' }}</span>
+              <div class="flex items-center justify-between py-2 border-b border-slate-50 dark:border-slate-800">
+                <span class="text-sm text-slate-400 dark:text-slate-300">邮箱</span>
+                <span class="text-sm font-medium text-slate-700 dark:text-slate-600 truncate max-w-[160px]">{{ user?.email || '-' }}</span>
               </div>
-              <div class="flex items-center justify-between py-2 border-b border-slate-50">
-                <span class="text-sm text-slate-400">手机号</span>
-                <span class="text-sm font-medium text-slate-700">{{ user?.phone || '-' }}</span>
+              <div class="flex items-center justify-between py-2 border-b border-slate-50 dark:border-slate-800">
+                <span class="text-sm text-slate-400 dark:text-slate-300">手机号</span>
+                <span class="text-sm font-medium text-slate-700 dark:text-slate-600">{{ user?.phone || '-' }}</span>
               </div>
-              <div class="flex items-center justify-between py-2 border-b border-slate-50">
-                <span class="text-sm text-slate-400">注册时间</span>
-                <span class="text-sm font-medium text-slate-700">{{ user?.createTime || '-' }}</span>
+              <div class="flex items-center justify-between py-2 border-b border-slate-50 dark:border-slate-800">
+                <span class="text-sm text-slate-400 dark:text-slate-300">注册时间</span>
+                <span class="text-sm font-medium text-slate-700 dark:text-slate-600">{{ user?.createTime || '-' }}</span>
               </div>
-              <div class="flex items-center justify-between py-2 border-b border-slate-50">
-                <span class="text-sm text-slate-400">最后登录</span>
-                <span class="text-sm font-medium text-slate-700">{{ user?.lastLoginTime || '-' }}</span>
+              <div class="flex items-center justify-between py-2 border-b border-slate-50 dark:border-slate-800">
+                <span class="text-sm text-slate-400 dark:text-slate-300">最后登录</span>
+                <span class="text-sm font-medium text-slate-700 dark:text-slate-600">{{ user?.lastLoginTime || '-' }}</span>
               </div>
             </div>
           </div>
         </div>
 
         <!-- 修改密码 -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <div class="px-5 sm:px-6 py-4 border-b border-slate-50">
-            <h3 class="text-base font-semibold text-slate-800 flex items-center gap-2.5">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+          <div class="px-5 sm:px-6 py-4 border-b border-slate-50 dark:border-slate-800">
+            <h3 class="text-base font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2.5">
               <el-icon :size="18" color="#64748b"><Lock /></el-icon>修改密码
             </h3>
           </div>
@@ -138,7 +138,7 @@
               <!-- 密码强度 -->
               <div v-if="passwordForm.newPassword" class="mb-4 ml-0 sm:ml-[90px]">
                 <div class="flex items-center gap-2.5">
-                  <div class="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                  <div class="flex-1 h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                     <div class="h-full rounded-full transition-all duration-300" :class="pwdStrength.barClass" :style="{ width: pwdStrength.width }"></div>
                   </div>
                   <span class="text-xs font-medium w-10" :class="pwdStrength.color">{{ pwdStrength.text }}</span>
@@ -158,11 +158,11 @@
       <!-- 右栏 -->
       <div class="space-y-6">
         <!-- 角色信息 -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <div class="px-5 py-4 border-b border-slate-50">
-            <h3 class="text-base font-semibold text-slate-800 flex items-center gap-2.5">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-50 dark:border-slate-800">
+            <h3 class="text-base font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2.5">
               <el-icon :size="18" color="#64748b"><Avatar /></el-icon>角色信息
-              <span class="text-xs text-slate-400 font-normal">{{ roles.length ? `(${roles.length})` : '' }}</span>
+              <span class="text-xs text-slate-400 dark:text-slate-300 font-normal">{{ roles.length ? `(${roles.length})` : '' }}</span>
             </h3>
           </div>
           <div class="p-5">
@@ -175,36 +175,36 @@
                 </span>
               </div>
             </template>
-            <p v-else class="text-sm text-slate-400 py-4 text-center">暂无角色</p>
+            <p v-else class="text-sm text-slate-400 dark:text-slate-300 py-4 text-center">暂无角色</p>
           </div>
         </div>
 
         <!-- 权限列表 -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <div class="px-5 py-4 border-b border-slate-50">
-            <h3 class="text-base font-semibold text-slate-800 flex items-center gap-2.5">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-50 dark:border-slate-800">
+            <h3 class="text-base font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2.5">
               <el-icon :size="18" color="#64748b"><Key /></el-icon>权限列表
-              <span class="text-xs text-slate-400 font-normal">({{ permissions.length }})</span>
+              <span class="text-xs text-slate-400 dark:text-slate-300 font-normal">({{ permissions.length }})</span>
             </h3>
           </div>
           <div class="p-5">
             <template v-if="permissions.length">
               <div class="max-h-56 overflow-y-auto space-y-1">
                 <div v-for="p in permissions" :key="p"
-                     class="flex items-center gap-2.5 py-1.5 text-sm text-slate-600 hover:bg-slate-50 rounded-lg px-2 -mx-2 transition-colors">
+                     class="flex items-center gap-2.5 py-1.5 text-sm text-slate-600 dark:text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900 rounded-lg px-2 -mx-2 transition-colors">
                   <el-icon :size="14" color="#10b981"><Select /></el-icon>
                   {{ p }}
                 </div>
               </div>
             </template>
-            <p v-else class="text-sm text-slate-400 py-4 text-center">暂无权限</p>
+            <p v-else class="text-sm text-slate-400 dark:text-slate-300 py-4 text-center">暂无权限</p>
           </div>
         </div>
 
         <!-- 当前会话 -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <div class="px-5 py-4 border-b border-slate-50">
-            <h3 class="text-base font-semibold text-slate-800 flex items-center gap-2.5">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-50 dark:border-slate-800">
+            <h3 class="text-base font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2.5">
               <el-icon :size="18" color="#64748b"><Monitor /></el-icon>当前会话
               <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0" title="在线"></span>
             </h3>
@@ -212,16 +212,16 @@
           <div class="p-5">
             <div class="space-y-4 text-sm">
               <div class="flex items-center justify-between">
-                <span class="text-slate-400">浏览器</span>
-                <span class="font-medium text-slate-700">{{ browserInfo }}</span>
+                <span class="text-slate-400 dark:text-slate-300">浏览器</span>
+                <span class="font-medium text-slate-700 dark:text-slate-600">{{ browserInfo }}</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-slate-400">操作系统</span>
-                <span class="font-medium text-slate-700">{{ osInfo }}</span>
+                <span class="text-slate-400 dark:text-slate-300">操作系统</span>
+                <span class="font-medium text-slate-700 dark:text-slate-600">{{ osInfo }}</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-slate-400">登录 IP</span>
-                <span class="font-medium text-slate-700">-</span>
+                <span class="text-slate-400 dark:text-slate-300">登录 IP</span>
+                <span class="font-medium text-slate-700 dark:text-slate-600">-</span>
               </div>
             </div>
           </div>

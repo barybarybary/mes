@@ -1,16 +1,16 @@
 -- Products (8 finished + 3 raw)
 INSERT INTO product (code, name, category_id, spec, unit, price, status) VALUES
-('P001', 'Precision Gear Shaft', NULL, 'D25x120mm 45#Steel', 'pcs', 85.00, 1),
-('P002', 'Hydraulic Valve Body', NULL, 'HT250 Casting', 'set', 1200.00, 1),
-('P003', 'Motor End Cover', NULL, 'D180x30mm Al Alloy', 'pcs', 45.00, 1),
-('P004', 'Flange Connector', NULL, 'DN100 SS304', 'pcs', 320.00, 1),
-('P005', 'Drive Shaft Bushing', NULL, 'D50xD30x80mm Bronze', 'pcs', 28.50, 1),
-('P006', 'Bearing Housing', NULL, 'SN210 Cast Iron', 'set', 156.00, 1),
-('P007', 'Control Panel Case', NULL, '450x300x120mm ABS', 'pcs', 68.00, 1),
-('P008', 'Radiator Assembly', NULL, '600x400x50mm Al Extrusion', 'set', 480.00, 1),
-('M001', 'Round Bar 45# Steel', NULL, 'D30mmx6m', 'bar', 180.00, 1),
-('M002', 'Cast Iron Blank HT250', NULL, '200x200x100mm', 'block', 95.00, 1),
-('M003', 'SS304 Plate', NULL, '3mmx1500x3000mm', 'sheet', 680.00, 1);
+('P001', '精密齿轮轴', NULL, 'D25x120mm 45#Steel', 'pcs', 85.00, 1),
+('P002', '液压阀体', NULL, 'HT250 Casting', 'set', 1200.00, 1),
+('P003', '电机端盖', NULL, 'D180x30mm Al Alloy', 'pcs', 45.00, 1),
+('P004', '法兰连接器', NULL, 'DN100 SS304', 'pcs', 320.00, 1),
+('P005', '传动轴轴套', NULL, 'D50xD30x80mm Bronze', 'pcs', 28.50, 1),
+('P006', '轴承座', NULL, 'SN210 Cast Iron', 'set', 156.00, 1),
+('P007', '控制面板外壳', NULL, '450x300x120mm ABS', 'pcs', 68.00, 1),
+('P008', '散热器总成', NULL, '600x400x50mm Al Extrusion', 'set', 480.00, 1),
+('M001', '45#圆钢', NULL, 'D30mmx6m', 'bar', 180.00, 1),
+('M002', 'HT250铸铁毛坯', NULL, '200x200x100mm', 'block', 95.00, 1),
+('M003', 'SS304不锈钢板', NULL, '3mmx1500x3000mm', 'sheet', 680.00, 1);
 
 -- Processes
 INSERT INTO process (code, name, standard_hours, price, sort, status) VALUES

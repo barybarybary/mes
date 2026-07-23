@@ -32,14 +32,16 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/api/captcha/**",
                         "/api/register/**",
                         "/api/public/**",
-                        "/api/bi/alerts/stream",
+                        "/api/portal/login",
+                        "/api/portal/register",
+                        "/api/portal/products/**",
                         "/doc.html",
                         "/v3/api-docs/**",
                         "/swagger-resources/**",
                         "/webjars/**"
                 );
 
-        // 权限校验拦截器
+        // 权限校验拦截器（portal 不使用 RBAC，全部排除）
         registry.addInterceptor(permissionInterceptor)
                 .addPathPatterns("/api/**")
                 .excludePathPatterns(
@@ -49,7 +51,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/api/user/profile",
                         "/api/user/password",
                         "/api/public/**",
-                        "/api/bi/alerts/stream",
+                        "/api/portal/**",
                         "/doc.html",
                         "/v3/api-docs/**",
                         "/swagger-resources/**",

@@ -3,7 +3,6 @@ package com.itheima.mes1.module.system.entity;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 @TableName("sys_user")
@@ -25,9 +24,6 @@ public class SysUser {
     private LocalDateTime updateTime;
     private LocalDateTime lastLoginTime;
 
-    @TableField(exist = false)
-    private String token;
-
-    @TableField(exist = false)
-    private List<com.itheima.mes1.module.system.entity.SysRole> roles;
+    /** 登录后的 token（仅内存传递，不持久化） */
+    private transient String token;
 }

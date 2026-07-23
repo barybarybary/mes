@@ -4,9 +4,11 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.itheima.mes1.common.PageResult;
 import com.itheima.mes1.common.Result;
 import com.itheima.mes1.common.annotation.RequirePermission;
+import com.itheima.mes1.module.production.ProductionConverter;
 import com.itheima.mes1.module.production.entity.WorkOrder;
 import com.itheima.mes1.module.production.mapper.WorkOrderMapper;
 import com.itheima.mes1.module.production.service.WorkOrderService;
+import com.itheima.mes1.module.production.vo.WorkOrderVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,24 +26,26 @@ public class WorkOrderController {
 
     @RequirePermission("production:work-order:list")
     @GetMapping
-    public Result<PageResult<WorkOrder>> list(
+    public Result<PageResult<WorkOrderVO>> list(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int pageSize,
             @RequestParam(required = false) Integer status) {
         Page<WorkOrder> result = workOrderService.page(page, pageSize, status);
-        return Result.ok(new PageResult<>(result.getRecords(), result.getTotal(), page, pageSize));
+        return Result.ok(new PageResult<>(
+                ProductionConverter.toVOList(result.getRecords()),
+                result.getTotal(), page, pageSize));
     }
 
     @RequirePermission("production:work-order:list")
     @GetMapping("/{id}")
-    public Result<WorkOrder> getById(@PathVariable Long id) {
-        return Result.ok(workOrderService.getDetail(id));
+    public Result<WorkOrderVO> getById(@PathVariable Long id) {
+        return Result.ok(ProductionConverter.toVO(workOrderService.getDetail(id)));
     }
 
     @RequirePermission("production:work-order:add")
     @PostMapping
-    public Result<WorkOrder> create(@RequestBody WorkOrder wo) {
-        return Result.ok(workOrderService.create(wo));
+    public Result<WorkOrderVO> create(@RequestBody WorkOrder wo) {
+        return Result.ok(ProductionConverter.toVO(workOrderService.create(wo)));
     }
 
     @RequirePermission("production:work-order:start")

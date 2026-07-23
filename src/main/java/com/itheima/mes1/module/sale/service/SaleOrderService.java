@@ -1,20 +1,25 @@
 package com.itheima.mes1.module.sale.service;
 
 import cn.hutool.core.util.RandomUtil;
-import java.time.format.DateTimeFormatter;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.itheima.mes1.common.exception.BusinessException;
+import com.itheima.mes1.module.sale.SaleConverter;
+import com.itheima.mes1.module.sale.dto.SaleOrderCreateReq;
+import com.itheima.mes1.module.sale.dto.SaleOrderItemReq;
+import com.itheima.mes1.module.sale.dto.SaleOrderUpdateReq;
 import com.itheima.mes1.module.sale.entity.SaleOrder;
 import com.itheima.mes1.module.sale.entity.SaleOrderItem;
 import com.itheima.mes1.module.sale.mapper.SaleOrderItemMapper;
 import com.itheima.mes1.module.sale.mapper.SaleOrderMapper;
+import com.itheima.mes1.module.sale.vo.SaleOrderVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
@@ -25,43 +30,67 @@ public class SaleOrderService {
     @Autowired
     private SaleOrderItemMapper itemMapper;
 
-    public Page<SaleOrder> page(int page, int pageSize, Integer status, String keyword) {
+    public Page<SaleOrderVO> page(int page, int pageSize, Integer status, String keyword) {
         LambdaQueryWrapper<SaleOrder> w = new LambdaQueryWrapper<SaleOrder>()
                 .eq(status != null, SaleOrder::getStatus, status)
                 .orderByDesc(SaleOrder::getCreateTime);
         Page<SaleOrder> result = orderMapper.selectPage(new Page<>(page, pageSize), w);
         result.setTotal(orderMapper.selectCount(w));
-        result.getRecords().forEach(o -> {
+
+        Page<SaleOrderVO> voPage = new Page<>(page, pageSize);
+        voPage.setTotal(result.getTotal());
+        voPage.setRecords(result.getRecords().stream().map(o -> {
             SaleOrder full = orderMapper.selectWithCustomer(o.getId());
-            if (full != null) o.setCustomerName(full.getCustomerName());
-            o.setItems(itemMapper.selectByOrderId(o.getId()));
-        });
-        return result;
+            SaleOrderVO vo = SaleConverter.toVO(full != null ? full : o);
+            vo.setItems(SaleConverter.toItemVOList(itemMapper.selectByOrderId(o.getId())));
+            return vo;
+        }).toList());
+        return voPage;
     }
 
-    public SaleOrder getDetail(Long id) {
+    public SaleOrderVO getDetail(Long id) {
         SaleOrder order = orderMapper.selectWithCustomer(id);
-        if (order != null) order.setItems(itemMapper.selectByOrderId(id));
-        return order;
+        if (order == null) return null;
+        SaleOrderVO vo = SaleConverter.toVO(order);
+        vo.setItems(SaleConverter.toItemVOList(itemMapper.selectByOrderId(id)));
+        return vo;
     }
 
     @Transactional
-    public SaleOrder create(SaleOrder order) {
-        order.setOrderNo("SO" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + RandomUtil.randomNumbers(4));
+    public SaleOrderVO create(SaleOrderCreateReq req) {
+        SaleOrder order = new SaleOrder();
+        order.setCustomerId(req.getCustomerId());
+        order.setOrderDate(req.getOrderDate());
+        order.setDeliveryDate(req.getDeliveryDate());
+        order.setRemark(req.getRemark());
+        order.setOrderNo("SO" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
+                + RandomUtil.randomNumbers(4));
         order.setStatus(1);
         orderMapper.insert(order);
-        saveItems(order);
-        return order;
+
+        BigDecimal total = saveItemsFromReq(order.getId(), req.getItems());
+        order.setTotalAmount(total);
+        orderMapper.updateById(order);
+
+        return getDetail(order.getId());
     }
 
     @Transactional
-    public void update(SaleOrder order) {
-        SaleOrder exist = orderMapper.selectById(order.getId());
+    public void update(SaleOrderUpdateReq req) {
+        SaleOrder exist = orderMapper.selectById(req.getId());
         if (exist.getStatus() != 1) throw new BusinessException("只有待审核的订单可以修改");
+
+        SaleOrder order = new SaleOrder();
+        order.setId(req.getId());
+        order.setDeliveryDate(req.getDeliveryDate());
+        order.setRemark(req.getRemark());
         orderMapper.updateById(order);
-        if (order.getItems() != null) {
-            itemMapper.deleteByOrderId(order.getId());
-            saveItems(order);
+
+        if (req.getItems() != null) {
+            itemMapper.deleteByOrderId(req.getId());
+            BigDecimal total = saveItemsFromReq(req.getId(), req.getItems());
+            order.setTotalAmount(total);
+            orderMapper.updateById(order);
         }
     }
 
@@ -76,11 +105,12 @@ public class SaleOrderService {
         orderMapper.deleteById(id);
     }
 
-    private void saveItems(SaleOrder order) {
+    private BigDecimal saveItemsFromReq(Long orderId, List<SaleOrderItemReq> itemReqs) {
         BigDecimal total = BigDecimal.ZERO;
-        if (order.getItems() != null) {
-            for (SaleOrderItem item : order.getItems()) {
-                item.setOrderId(order.getId());
+        if (itemReqs != null) {
+            for (SaleOrderItemReq req : itemReqs) {
+                SaleOrderItem item = SaleConverter.toEntity(req);
+                item.setOrderId(orderId);
                 BigDecimal qty = item.getQuantity() != null ? item.getQuantity() : BigDecimal.ZERO;
                 BigDecimal price = item.getPrice() != null ? item.getPrice() : BigDecimal.ZERO;
                 item.setAmount(qty.multiply(price));
@@ -88,7 +118,6 @@ public class SaleOrderService {
                 total = total.add(item.getAmount());
             }
         }
-        order.setTotalAmount(total);
-        orderMapper.updateById(order);
+        return total;
     }
 }

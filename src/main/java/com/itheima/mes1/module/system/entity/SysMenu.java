@@ -3,7 +3,6 @@ package com.itheima.mes1.module.system.entity;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 @TableName("sys_menu")
@@ -25,7 +24,4 @@ public class SysMenu {
     private LocalDateTime createTime;
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
-
-    @TableField(exist = false)
-    private List<SysMenu> children;
 }

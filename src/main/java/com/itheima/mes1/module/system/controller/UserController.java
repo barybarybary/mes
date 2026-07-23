@@ -2,8 +2,10 @@ package com.itheima.mes1.module.system.controller;
 
 import cn.hutool.core.util.StrUtil;
 import com.itheima.mes1.common.Result;
+import com.itheima.mes1.module.system.SysConverter;
 import com.itheima.mes1.module.system.entity.SysUser;
 import com.itheima.mes1.module.system.service.SysUserService;
+import com.itheima.mes1.module.system.vo.SysUserVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,15 +29,14 @@ public class UserController {
 
     @Operation(summary = "获取个人资料")
     @GetMapping("/profile")
-    public Result<SysUser> getProfile(@RequestHeader("Authorization") String token) {
+    public Result<SysUserVO> getProfile(@RequestHeader("Authorization") String token) {
         Object userIdObj = redisTemplate.opsForValue().get("token:" + token.replace("Bearer ", ""));
         if (userIdObj == null) {
             return Result.fail("未登录或登录已过期");
         }
         Long userId = ((Number) userIdObj).longValue();
         SysUser user = userService.getById(userId);
-        if (user != null) user.setPassword(null);
-        return Result.ok(user);
+        return Result.ok(SysConverter.toVO(user));
     }
 
     @Operation(summary = "更新个人资料")
@@ -68,7 +69,7 @@ public class UserController {
             user.setPhone(phone);
         }
         userService.updateById(user);
-        return Result.ok(user);
+        return Result.ok(SysConverter.toVO(user));
     }
 
     @Operation(summary = "修改密码")
@@ -95,7 +96,6 @@ public class UserController {
             return Result.fail("新密码至少 6 位");
         }
 
-        // 校验原密码 (兼容 MD5 和 BCrypt)
         if (!passwordEncoder.matches(oldPassword, user.getPassword())
                 && !user.getPassword().equals(cn.hutool.crypto.SecureUtil.md5(oldPassword))) {
             return Result.fail("原密码错误");

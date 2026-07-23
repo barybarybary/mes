@@ -31,4 +31,8 @@ public interface InventoryMapper extends BaseMapper<Inventory> {
     /** 当前库存平均量（用于周转率计算） */
     @Select("SELECT COALESCE(AVG(quantity), 0) FROM inventory WHERE quantity > 0")
     BigDecimal selectAverageStock();
+
+    /** 某产品总库存量 */
+    @Select("SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE product_id = #{productId}")
+    Integer sumQuantityByProduct(Long productId);
 }

@@ -1,15 +1,15 @@
 package com.itheima.mes1.module.sale.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.itheima.mes1.module.sale.SaleConverter;
 import com.itheima.mes1.module.sale.entity.Delivery;
 import com.itheima.mes1.module.sale.entity.DeliveryItem;
 import com.itheima.mes1.module.sale.mapper.DeliveryItemMapper;
 import com.itheima.mes1.module.sale.mapper.DeliveryMapper;
+import com.itheima.mes1.module.sale.vo.DeliveryVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 public class SaleDeliveryService {
@@ -17,30 +17,30 @@ public class SaleDeliveryService {
     @Autowired private DeliveryMapper deliveryMapper;
     @Autowired private DeliveryItemMapper deliveryItemMapper;
 
-    public Page<Delivery> page(int page, int pageSize) {
+    public Page<DeliveryVO> page(int page, int pageSize) {
         Page<Delivery> p = new Page<>(page, pageSize);
         deliveryMapper.selectPage(p, null);
-        for (Delivery d : p.getRecords()) {
+        Page<DeliveryVO> voPage = new Page<>(page, pageSize);
+        voPage.setTotal(p.getTotal());
+        voPage.setRecords(p.getRecords().stream().map(d -> {
             Delivery detail = deliveryMapper.selectWithDetail(d.getId());
-            if (detail != null) {
-                d.setCustomerName(detail.getCustomerName());
-                d.setOrderNo(detail.getOrderNo());
-            }
-            d.setItems(deliveryItemMapper.selectByDeliveryId(d.getId()));
-        }
-        return p;
+            DeliveryVO vo = SaleConverter.toVO(detail != null ? detail : d);
+            vo.setItems(SaleConverter.toDeliveryItemVOList(deliveryItemMapper.selectByDeliveryId(d.getId())));
+            return vo;
+        }).toList());
+        return voPage;
     }
 
-    public Delivery getDetail(Long id) {
+    public DeliveryVO getDetail(Long id) {
         Delivery d = deliveryMapper.selectWithDetail(id);
-        if (d != null) {
-            d.setItems(deliveryItemMapper.selectByDeliveryId(id));
-        }
-        return d;
+        if (d == null) return null;
+        DeliveryVO vo = SaleConverter.toVO(d);
+        vo.setItems(SaleConverter.toDeliveryItemVOList(deliveryItemMapper.selectByDeliveryId(id)));
+        return vo;
     }
 
     @Transactional
-    public Delivery create(Delivery delivery) {
+    public DeliveryVO create(Delivery delivery) {
         deliveryMapper.insert(delivery);
         if (delivery.getItems() != null) {
             for (DeliveryItem item : delivery.getItems()) {

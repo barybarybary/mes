@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 @TableName("delivery")
@@ -30,5 +29,5 @@ public class Delivery {
     @TableField(exist = false)
     private String orderNo;
     @TableField(exist = false)
-    private List<DeliveryItem> items;
+    private java.util.List<DeliveryItem> items;
 }

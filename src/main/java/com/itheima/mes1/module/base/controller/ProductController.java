@@ -7,12 +7,15 @@ import com.itheima.mes1.common.annotation.RequirePermission;
 import com.itheima.mes1.module.base.entity.Bom;
 import com.itheima.mes1.module.base.entity.Product;
 import com.itheima.mes1.module.base.service.ProductService;
+import com.itheima.mes1.module.base.vo.ProductVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Tag(name = "产品管理")
 @RestController
@@ -25,20 +28,22 @@ public class ProductController {
     @RequirePermission("base:product:list")
     @Operation(summary = "分页查询产品")
     @GetMapping
-    public Result<PageResult<Product>> list(
+    public Result<PageResult<ProductVO>> list(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int pageSize,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Long categoryId) {
         Page<Product> result = productService.pageProducts(page, pageSize, keyword, categoryId);
-        return Result.ok(new PageResult<>(result.getRecords(), result.getTotal(), page, pageSize));
+        List<ProductVO> voList = result.getRecords().stream()
+                .map(this::toVO).collect(Collectors.toList());
+        return Result.ok(new PageResult<>(voList, result.getTotal(), page, pageSize));
     }
 
     @RequirePermission("base:product:list")
     @Operation(summary = "产品详情(含BOM)")
     @GetMapping("/{id}")
-    public Result<Product> getById(@PathVariable Long id) {
-        return Result.ok(productService.getDetail(id));
+    public Result<ProductVO> getById(@PathVariable Long id) {
+        return Result.ok(toVO(productService.getDetail(id)));
     }
 
     @RequirePermission("base:product:add")
@@ -68,5 +73,12 @@ public class ProductController {
     public Result<?> saveBom(@PathVariable Long id, @RequestBody List<Bom> bomList) {
         productService.saveBoms(id, bomList);
         return Result.ok();
+    }
+
+    private ProductVO toVO(Product p) {
+        if (p == null) return null;
+        ProductVO vo = new ProductVO();
+        BeanUtils.copyProperties(p, vo);
+        return vo;
     }
 }

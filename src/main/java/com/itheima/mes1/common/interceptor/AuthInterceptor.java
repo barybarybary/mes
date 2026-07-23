@@ -8,14 +8,13 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Token 认证拦截器：从 Header 取 token，查 Redis 获取 userId 和权限集合
+ * Token 认证拦截器：支持后台（token:）和门户（portal_token:）两套认证
  */
 @Component
 public class AuthInterceptor implements HandlerInterceptor {
@@ -32,7 +31,6 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.replace("Bearer ", "");
         }
-        // SSE/EventSource 不支持自定义 Header，允许通过 query param 传 token
         if (token == null) {
             token = request.getParameter("token");
         }
@@ -40,6 +38,22 @@ public class AuthInterceptor implements HandlerInterceptor {
             writeJson(response, 401, "未登录或 Token 格式错误");
             return false;
         }
+
+        String requestPath = request.getRequestURI();
+
+        // === 门户（portal）认证 ===
+        if (requestPath.startsWith("/api/portal")) {
+            Object customerIdObj = redisTemplate.opsForValue().get("portal_token:" + token);
+            if (customerIdObj == null) {
+                writeJson(response, 401, "登录已过期，请重新登录");
+                return false;
+            }
+            request.setAttribute("portalCustomerId", ((Number) customerIdObj).longValue());
+            redisTemplate.expire("portal_token:" + token, 24, TimeUnit.HOURS);
+            return true;
+        }
+
+        // === 后台管理认证 ===
         Object userIdObj = redisTemplate.opsForValue().get("token:" + token);
         if (userIdObj == null) {
             writeJson(response, 401, "Token 已过期，请重新登录");
@@ -47,7 +61,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         }
         Long userId = ((Number) userIdObj).longValue();
 
-        // 获取权限集合（JSON 反序列化为 List，需转换）
+        // 获取权限集合
         Object permObj = redisTemplate.opsForValue().get("perm:" + userId);
         Set<String> permissions;
         if (permObj instanceof Set<?> s) {
@@ -63,11 +77,9 @@ public class AuthInterceptor implements HandlerInterceptor {
             permissions = Set.of();
         }
 
-        // 存入 request 供后续使用
         request.setAttribute("userId", userId);
         request.setAttribute("permissions", permissions);
 
-        // 刷新 token TTL
         redisTemplate.expire("token:" + token, 24, TimeUnit.HOURS);
         redisTemplate.expire("perm:" + userId, 24, TimeUnit.HOURS);
 

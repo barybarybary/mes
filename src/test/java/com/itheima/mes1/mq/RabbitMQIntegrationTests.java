@@ -146,15 +146,6 @@ class RabbitMQIntegrationTests {
     }
 
     @Test
-    void testAlertQueueBean() {
-        Queue queue = rabbitMQConfig.alertQueue();
-        assertEquals("mes.alert.queue", queue.getName());
-        assertTrue(queue.isDurable());
-        // 告警队列无 DLQ
-        assertNull(queue.getArguments().get("x-dead-letter-routing-key"));
-    }
-
-    @Test
     void testAuditQueueBean() {
         Queue queue = rabbitMQConfig.auditQueue();
         assertEquals("mes.audit.queue", queue.getName());
@@ -185,22 +176,6 @@ class RabbitMQIntegrationTests {
     }
 
     @Test
-    void testAlertBinding() {
-        Binding binding = rabbitMQConfig.alertBinding();
-        assertEquals("mes.alert.queue", binding.getDestination());
-        assertEquals("mes.event.exchange", binding.getExchange());
-        assertEquals("alert.*", binding.getRoutingKey());
-    }
-
-    @Test
-    void testNotifyBinding() {
-        Binding binding = rabbitMQConfig.notifyBinding();
-        assertEquals("mes.alert.queue", binding.getDestination());
-        assertEquals("mes.event.exchange", binding.getExchange());
-        assertEquals("notify.#", binding.getRoutingKey());
-    }
-
-    @Test
     void testAuditBinding() {
         Binding binding = rabbitMQConfig.auditBinding();
         assertEquals("mes.audit.queue", binding.getDestination());
@@ -213,9 +188,9 @@ class RabbitMQIntegrationTests {
     @Test
     void testCompleteTopologyConsistency() {
         // 所有队列名称唯一
-        assertNotEquals(rabbitMQConfig.mailQueue().getName(), rabbitMQConfig.alertQueue().getName());
         assertNotEquals(rabbitMQConfig.mailQueue().getName(), rabbitMQConfig.auditQueue().getName());
-        assertNotEquals(rabbitMQConfig.alertQueue().getName(), rabbitMQConfig.auditQueue().getName());
+        assertNotEquals(rabbitMQConfig.workOrderQueue().getName(), rabbitMQConfig.mailQueue().getName());
+        assertNotEquals(rabbitMQConfig.workOrderQueue().getName(), rabbitMQConfig.auditQueue().getName());
 
         // 所有交换机名称唯一
         assertNotEquals(rabbitMQConfig.mailExchange().getName(), rabbitMQConfig.eventExchange().getName());

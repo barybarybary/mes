@@ -5,7 +5,6 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 @TableName("sale_order")
@@ -27,8 +26,7 @@ public class SaleOrder {
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 
+    /** join 结果 — 仅内部使用，API 不暴露 */
     @TableField(exist = false)
     private String customerName;
-    @TableField(exist = false)
-    private List<SaleOrderItem> items;
 }

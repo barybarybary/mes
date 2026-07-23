@@ -6,6 +6,7 @@ import com.itheima.mes1.common.Result;
 import com.itheima.mes1.common.annotation.RequirePermission;
 import com.itheima.mes1.module.sale.entity.Delivery;
 import com.itheima.mes1.module.sale.service.SaleDeliveryService;
+import com.itheima.mes1.module.sale.vo.DeliveryVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,24 +23,24 @@ public class SaleDeliveryController {
     @RequirePermission("sale:order:list")
     @Operation(summary = "发货单列表")
     @GetMapping
-    public Result<PageResult<Delivery>> list(
+    public Result<PageResult<DeliveryVO>> list(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int pageSize) {
-        Page<Delivery> result = deliveryService.page(page, pageSize);
+        Page<DeliveryVO> result = deliveryService.page(page, pageSize);
         return Result.ok(new PageResult<>(result.getRecords(), result.getTotal(), page, pageSize));
     }
 
     @RequirePermission("sale:order:list")
     @Operation(summary = "发货单详情")
     @GetMapping("/{id}")
-    public Result<Delivery> getById(@PathVariable Long id) {
+    public Result<DeliveryVO> getById(@PathVariable Long id) {
         return Result.ok(deliveryService.getDetail(id));
     }
 
     @RequirePermission("sale:order:add")
     @Operation(summary = "创建发货单")
     @PostMapping
-    public Result<Delivery> create(@RequestBody Delivery delivery) {
+    public Result<DeliveryVO> create(@RequestBody Delivery delivery) {
         return Result.ok(deliveryService.create(delivery));
     }
 

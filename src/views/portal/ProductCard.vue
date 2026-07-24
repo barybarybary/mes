@@ -9,7 +9,7 @@
       <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5 truncate">{{ product.spec || product.code }}</p>
       <div class="flex items-center justify-between mt-2">
         <span class="text-sky-600 font-bold text-base">¥{{ product.price }}</span>
-        <span class="text-xs text-slate-400 dark:text-slate-500">{{ product.unit }}</span>
+        <span class="text-xs" :class="(product.stockQuantity ?? 0) > 0 ? 'text-emerald-500' : 'text-red-400'">{{ (product.stockQuantity ?? 0) > 0 ? `库存 ${product.stockQuantity}` : '暂时缺货' }}</span>
       </div>
     </div>
   </router-link>

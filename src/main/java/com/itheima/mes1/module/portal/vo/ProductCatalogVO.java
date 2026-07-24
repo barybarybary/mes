@@ -14,4 +14,6 @@ public class ProductCatalogVO {
     private String imageUrl;
     private Long categoryId;
     private String categoryName;
+    /** 库存总量 */
+    private Integer stockQuantity;
 }

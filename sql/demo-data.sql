@@ -52,7 +52,12 @@ INSERT INTO inventory (product_id, warehouse_id, location_id, batch_no, quantity
 (11, 1, 1, 'B20260610', 20, 'sheet'),
 (3, 3, 5, 'B20260615', 120, 'pcs'),
 (1, 3, 5, 'B20260618', 80, 'pcs'),
-(5, 2, 3, 'B20260620', 200, 'pcs');
+(5, 2, 3, 'B20260620', 200, 'pcs'),
+(2, 3, 6, 'B20260622', 35, 'set'),
+(4, 3, 5, 'B20260625', 60, 'pcs'),
+(6, 3, 6, 'B20260628', 45, 'set'),
+(7, 3, 5, 'B20260701', 150, 'pcs'),
+(8, 3, 6, 'B20260705', 25, 'set');
 
 -- Sale Orders
 INSERT INTO sale_order (id, order_no, customer_id, order_date, delivery_date, status, total_amount, remark) VALUES

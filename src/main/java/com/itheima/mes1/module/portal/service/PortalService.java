@@ -125,12 +125,24 @@ public class PortalService {
         // 预加载所有分类，建立 id→name 映射
         Map<Long, String> categoryMap = categoryMapper.selectList(null).stream()
                 .collect(Collectors.toMap(ProductCategory::getId, ProductCategory::getName));
+        // 批量查询库存
+        List<Long> productIds = result.getRecords().stream().map(Product::getId).collect(Collectors.toList());
+        Map<Long, Integer> stockMap = new HashMap<>();
+        if (!productIds.isEmpty()) {
+            List<Map<String, Object>> stocks = inventoryMapper.sumQuantityByProductIds(productIds);
+            for (Map<String, Object> row : stocks) {
+                Long pid = ((Number) row.get("product_id")).longValue();
+                Integer qty = ((Number) row.get("stock")).intValue();
+                stockMap.put(pid, qty);
+            }
+        }
         Page<ProductCatalogVO> voPage = new Page<>(page, pageSize);
         voPage.setTotal(result.getTotal());
         voPage.setRecords(result.getRecords().stream().map(p -> {
             ProductCatalogVO vo = new ProductCatalogVO();
             BeanUtils.copyProperties(p, vo);
             vo.setCategoryName(categoryMap.get(p.getCategoryId()));
+            vo.setStockQuantity(stockMap.getOrDefault(p.getId(), 0));
             return vo;
         }).collect(Collectors.toList()));
         return voPage;

@@ -35,4 +35,13 @@ public interface InventoryMapper extends BaseMapper<Inventory> {
     /** 某产品总库存量 */
     @Select("SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE product_id = #{productId}")
     Integer sumQuantityByProduct(Long productId);
+
+    /** 批量查询产品库存 */
+    @Select("<script>" +
+            "SELECT product_id, COALESCE(SUM(quantity), 0) as stock " +
+            "FROM inventory WHERE product_id IN " +
+            "<foreach collection='productIds' item='id' open='(' separator=',' close=')'>#{id}</foreach>" +
+            " GROUP BY product_id" +
+            "</script>")
+    List<Map<String, Object>> sumQuantityByProductIds(@org.apache.ibatis.annotations.Param("productIds") List<Long> productIds);
 }

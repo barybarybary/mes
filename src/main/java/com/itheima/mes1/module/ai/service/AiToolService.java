@@ -454,6 +454,27 @@ public class AiToolService {
             default -> "未知";
         };
     }
+    @Tool("列出在售产品列表（客户可见，支持关键字和分类过滤）。keyword传空字符串查全部产品")
+    public String listProducts(
+            @P("产品名称或分类关键字（可选，传空字符串查全部）") String keyword) {
+        LambdaQueryWrapper<Product> qw = new LambdaQueryWrapper<Product>()
+                .eq(Product::getStatus, 1);
+        if (keyword != null && !keyword.isBlank()) {
+            qw.and(w -> w.like(Product::getName, keyword).or().like(Product::getCode, keyword));
+        }
+        qw.orderByDesc(Product::getCreateTime).last("LIMIT 15");
+        List<Product> list = productMapper.selectList(qw);
+        if (list.isEmpty()) return keyword != null && !keyword.isBlank()
+                ? "未找到与「" + keyword + "」相关的在售产品。"
+                : "暂无在售产品。";
+        return "=== 在售产品列表 ===\n" + list.stream()
+                .map(p -> String.format("[%s] %s | 规格:%s | 售价:¥%s | 单位:%s",
+                        p.getCode(), p.getName(),
+                        p.getSpec() != null ? p.getSpec() : "-",
+                        p.getPrice(), p.getUnit()))
+                .collect(Collectors.joining("\n"));
+    }
+
     private String woStatusDesc(Integer s) {
         return switch (s) {
             case 1 -> "待生产"; case 2 -> "生产中"; case 3 -> "已完成"; case 4 -> "已入库";

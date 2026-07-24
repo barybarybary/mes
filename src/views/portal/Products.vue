@@ -1,29 +1,30 @@
 <template>
-  <div class="min-h-screen bg-slate-50">
+  <div class="min-h-screen bg-slate-50 dark:bg-slate-900">
     <PortalNavbar />
     <div class="max-w-6xl mx-auto px-4 py-8">
       <!-- 搜索 + 分类 -->
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <h2 class="text-xl font-bold text-slate-800">产品中心</h2>
+        <h2 class="text-xl font-bold text-slate-800 dark:text-slate-200">产品中心</h2>
         <el-input v-model="keyword" placeholder="搜索产品..." :prefix-icon="Search" clearable class="max-w-xs" @input="fetchData" />
       </div>
       <!-- 分类标签 -->
       <div class="flex flex-wrap gap-2 mb-6">
         <button
           @click="categoryId = null; fetchData()"
-          :class="!categoryId ? 'bg-sky-500 text-white' : 'bg-white text-slate-600 border-slate-200 hover:border-sky-300'"
+          :class="!categoryId ? 'bg-sky-500 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-sky-300'"
           class="px-4 py-1.5 rounded-full text-sm border transition"
         >全部</button>
         <button
-          v-for="cat in categories" :key="cat.id"
+          v-for="cat in flatCategories" :key="cat.id"
           @click="categoryId = cat.id; fetchData()"
-          :class="categoryId === cat.id ? 'bg-sky-500 text-white' : 'bg-white text-slate-600 border-slate-200 hover:border-sky-300'"
+          :class="categoryId === cat.id ? 'bg-sky-500 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-sky-300'"
           class="px-4 py-1.5 rounded-full text-sm border transition"
+          :style="{ marginLeft: cat._depth * 12 + 'px' }"
         >{{ cat.name }}</button>
       </div>
       <!-- 列表 -->
-      <div v-if="loading" class="text-center py-10 text-slate-400">加载中...</div>
-      <div v-else-if="products.length === 0" class="text-center py-10 text-slate-400">暂无产品</div>
+      <div v-if="loading" class="text-center py-10 text-slate-400 dark:text-slate-500">加载中...</div>
+      <div v-else-if="products.length === 0" class="text-center py-10 text-slate-400 dark:text-slate-500">暂无产品</div>
       <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         <ProductCard v-for="p in products" :key="p.id" :product="p" />
       </div>
@@ -41,9 +42,11 @@ import { Search } from '@element-plus/icons-vue'
 import api from '@/api/portal'
 import PortalNavbar from './PortalNavbar.vue'
 import ProductCard from './ProductCard.vue'
+import { flattenTree } from '@/utils/portal'
 
 const products = ref([])
 const categories = ref([])
+const flatCategories = ref([])
 const loading = ref(true)
 const keyword = ref('')
 const categoryId = ref(null)
@@ -72,6 +75,7 @@ onMounted(async () => {
   try {
     const res = await api.get('/categories')
     categories.value = res.data || []
+    flatCategories.value = flattenTree(categories.value)
   } catch { /* ignore */ }
   fetchData()
 })

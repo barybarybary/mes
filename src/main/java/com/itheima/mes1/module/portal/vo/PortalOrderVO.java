@@ -18,6 +18,7 @@ public class PortalOrderVO {
     private LocalDateTime createTime;
     private String deliveryNo;
     private LocalDate deliveryDate;
+    private Integer paid;         // 0=未付款 1=已付款
     private List<PortalOrderItemVO> items;
 
     @Data
@@ -25,6 +26,7 @@ public class PortalOrderVO {
         private Long productId;
         private String productName;
         private String productCode;
+        private String imageUrl;
         private BigDecimal quantity;
         private String unit;
         private BigDecimal price;

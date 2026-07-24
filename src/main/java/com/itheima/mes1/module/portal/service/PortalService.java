@@ -26,6 +26,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.itheima.mes1.module.inventory.service.InventoryService;
+import com.itheima.mes1.module.sale.entity.Delivery;
+import com.itheima.mes1.module.sale.mapper.DeliveryMapper;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -42,11 +46,13 @@ public class PortalService {
     @Autowired private SaleOrderItemMapper saleOrderItemMapper;
     @Autowired private InventoryMapper inventoryMapper;
     @Autowired private ProductCategoryMapper categoryMapper;
+    @Autowired private InventoryService inventoryService;
+    @Autowired private DeliveryMapper deliveryMapper;
     @Autowired private RedisTemplate<String, Object> redisTemplate;
     @Autowired private BCryptPasswordEncoder passwordEncoder;
 
     private static final Map<Integer, String> STATUS_MAP = Map.of(
-            1, "待审核", 2, "已审核", 3, "生产中", 4, "部分发货", 5, "已完成", 6, "已取消"
+            1, "待付款", 2, "已支付", 3, "生产中", 4, "已发货", 5, "已完成", 6, "已取消"
     );
 
     // ==================== 注册/登录 ====================
@@ -97,9 +103,17 @@ public class PortalService {
     // ==================== 产品浏览 ====================
 
     public Page<ProductCatalogVO> listProducts(int page, int pageSize, String keyword, Long categoryId) {
+        // 收集 categoryId 及其所有子分类
+        Set<Long> categoryIds = new HashSet<>();
+        if (categoryId != null) {
+            categoryIds.add(categoryId);
+            collectChildIds(categoryId, categoryIds);
+        }
+
         LambdaQueryWrapper<Product> w = new LambdaQueryWrapper<Product>()
                 .eq(Product::getStatus, 1)
-                .eq(categoryId != null, Product::getCategoryId, categoryId)
+                .in(!categoryIds.isEmpty(), Product::getCategoryId, categoryIds)
+                .eq(categoryId != null && categoryIds.isEmpty(), Product::getCategoryId, categoryId)
                 .and(cn.hutool.core.util.StrUtil.isNotBlank(keyword),
                         q -> q.like(Product::getName, keyword).or().like(Product::getCode, keyword))
                 .orderByDesc(Product::getCreateTime);
@@ -119,10 +133,48 @@ public class PortalService {
         return voPage;
     }
 
+    /** 递归收集所有子分类ID */
+    private void collectChildIds(Long parentId, Set<Long> result) {
+        List<ProductCategory> children = categoryMapper.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ProductCategory>()
+                        .eq(ProductCategory::getParentId, parentId));
+        for (ProductCategory c : children) {
+            result.add(c.getId());
+            collectChildIds(c.getId(), result);
+        }
+    }
+
+    /** 返回分类树（支持多级） */
     public List<Map<String, Object>> listCategories() {
-        return categoryMapper.selectList(null).stream()
-                .map(c -> Map.<String, Object>of("id", c.getId(), "name", c.getName()))
-                .collect(Collectors.toList());
+        List<ProductCategory> all = categoryMapper.selectList(null);
+        // id → node 映射
+        Map<Long, Map<String, Object>> nodeMap = new LinkedHashMap<>();
+        List<Map<String, Object>> roots = new ArrayList<>();
+        for (ProductCategory c : all) {
+            Map<String, Object> node = new LinkedHashMap<>();
+            node.put("id", c.getId());
+            node.put("name", c.getName());
+            node.put("parentId", c.getParentId());
+            node.put("sort", c.getSort());
+            node.put("children", new ArrayList<Map<String, Object>>());
+            nodeMap.put(c.getId(), node);
+        }
+        for (ProductCategory c : all) {
+            Map<String, Object> node = nodeMap.get(c.getId());
+            if (c.getParentId() == null || c.getParentId() == 0) {
+                roots.add(node);
+            } else {
+                Map<String, Object> parent = nodeMap.get(c.getParentId());
+                if (parent != null) {
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> children = (List<Map<String, Object>>) parent.get("children");
+                    children.add(node);
+                } else {
+                    roots.add(node); // 父分类已删除时挂到根
+                }
+            }
+        }
+        return roots;
     }
 
     public ProductDetailVO getProductDetail(Long id) {
@@ -188,12 +240,23 @@ public class PortalService {
             throw new BusinessException("请至少选择一个产品");
         }
 
+        PortalCustomer customer = customerMapper.selectById(customerId);
+        if (customer == null) throw new BusinessException("客户不存在");
+
         SaleOrder order = new SaleOrder();
         order.setOrderNo("SO" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
                 + RandomUtil.randomNumbers(4));
+        order.setCustomerId(customerId);
         order.setOrderDate(LocalDate.now());
+        order.setDeliveryDate(req.getDeliveryDate());
         order.setStatus(1);
-        order.setRemark(req.getRemark());
+        order.setPaid(0); // 初始未付款
+        // 地址拼入备注
+        String fullRemark = req.getRemark() != null ? req.getRemark() : "";
+        if (req.getAddress() != null && !req.getAddress().isBlank()) {
+            fullRemark = "【收货地址：" + req.getAddress() + "】" + (fullRemark.isEmpty() ? "" : " " + fullRemark);
+        }
+        order.setRemark(fullRemark.isEmpty() ? null : fullRemark);
         order.setCreateBy(customerId);
         saleOrderMapper.insert(order);
 
@@ -201,6 +264,14 @@ public class PortalService {
         for (PlaceOrderReq.OrderItemReq item : req.getItems()) {
             Product p = productMapper.selectById(item.getProductId());
             if (p == null) throw new BusinessException("产品不存在: " + item.getProductId());
+
+            // 扣减库存
+            try {
+                inventoryService.stockOut(item.getProductId(), null, null,
+                        BigDecimal.valueOf(item.getQuantity()), "销售出库", order.getOrderNo(), null);
+            } catch (BusinessException e) {
+                throw new BusinessException("产品「" + p.getName() + "」库存不足，请调整数量");
+            }
 
             SaleOrderItem soi = new SaleOrderItem();
             soi.setOrderId(order.getId());
@@ -213,7 +284,7 @@ public class PortalService {
             saleOrderItemMapper.insert(soi);
         }
         order.setTotalAmount(total);
-        saleOrderMapper.insert(order);
+        saleOrderMapper.updateById(order);
 
         // 清空购物车
         clearCart(customerId);
@@ -223,9 +294,10 @@ public class PortalService {
 
     // ==================== 订单查询 ====================
 
-    public Page<PortalOrderVO> listOrders(Long customerId, int page, int pageSize) {
+    public Page<PortalOrderVO> listOrders(Long customerId, int page, int pageSize, Integer status) {
         LambdaQueryWrapper<SaleOrder> w = new LambdaQueryWrapper<SaleOrder>()
                 .eq(SaleOrder::getCustomerId, customerId)
+                .eq(status != null, SaleOrder::getStatus, status)
                 .orderByDesc(SaleOrder::getCreateTime);
         Page<SaleOrder> result = saleOrderMapper.selectPage(new Page<>(page, pageSize), w);
 
@@ -245,6 +317,45 @@ public class PortalService {
         return buildOrderVO(order);
     }
 
+    /** 模拟支付 */
+    @Transactional
+    public void payOrder(Long customerId, Long orderId) {
+        SaleOrder order = saleOrderMapper.selectById(orderId);
+        if (order == null || !order.getCustomerId().equals(customerId)) {
+            throw new BusinessException("订单不存在");
+        }
+        if (order.getPaid() != null && order.getPaid() == 1) {
+            throw new BusinessException("订单已支付");
+        }
+        if (order.getStatus() != 1) {
+            throw new BusinessException("当前订单状态不可支付");
+        }
+        order.setPaid(1);
+        order.setStatus(2); // 已支付
+        saleOrderMapper.updateById(order);
+    }
+
+    /** 取消订单（仅 status=1 待付款时可取消） */
+    @Transactional
+    public void cancelOrder(Long customerId, Long orderId) {
+        SaleOrder order = saleOrderMapper.selectById(orderId);
+        if (order == null || !order.getCustomerId().equals(customerId)) {
+            throw new BusinessException("订单不存在");
+        }
+        if (order.getStatus() != 1) {
+            throw new BusinessException("仅待付款状态的订单可以取消");
+        }
+        order.setStatus(6); // 已取消
+        saleOrderMapper.updateById(order);
+
+        // 退还库存
+        List<SaleOrderItem> items = saleOrderItemMapper.selectByOrderId(orderId);
+        for (SaleOrderItem item : items) {
+            inventoryService.stockIn(item.getProductId(), null, null, null,
+                    item.getQuantity(), "订单取消退还", order.getOrderNo(), null);
+        }
+    }
+
     private PortalOrderVO buildOrderVO(SaleOrder order) {
         PortalOrderVO vo = new PortalOrderVO();
         vo.setId(order.getId());
@@ -252,9 +363,21 @@ public class PortalService {
         vo.setOrderDate(order.getOrderDate());
         vo.setStatus(order.getStatus());
         vo.setStatusText(STATUS_MAP.getOrDefault(order.getStatus(), "未知"));
+        vo.setPaid(order.getPaid() != null ? order.getPaid() : 0);
         vo.setTotalAmount(order.getTotalAmount());
         vo.setRemark(order.getRemark());
         vo.setCreateTime(order.getCreateTime());
+
+        // 关联发货信息：找该订单最新的发货单
+        List<Delivery> deliveries = deliveryMapper.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Delivery>()
+                        .eq(Delivery::getOrderId, order.getId())
+                        .orderByDesc(Delivery::getCreateTime));
+        if (deliveries != null && !deliveries.isEmpty()) {
+            Delivery latest = deliveries.get(0);
+            vo.setDeliveryNo(latest.getDeliveryNo());
+            vo.setDeliveryDate(latest.getDeliveryDate());
+        }
 
         List<SaleOrderItem> items = saleOrderItemMapper.selectByOrderId(order.getId());
         List<PortalOrderVO.PortalOrderItemVO> itemVOs = new ArrayList<>();
@@ -269,6 +392,7 @@ public class PortalService {
             if (p != null) {
                 ivo.setProductName(p.getName());
                 ivo.setProductCode(p.getCode());
+                ivo.setImageUrl(p.getImageUrl());
             }
             itemVOs.add(ivo);
         }

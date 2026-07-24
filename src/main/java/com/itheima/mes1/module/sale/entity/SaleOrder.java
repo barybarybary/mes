@@ -26,6 +26,9 @@ public class SaleOrder {
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 
+    /** 0=未付款 1=已付款（模拟支付） */
+    private Integer paid;
+
     /** join 结果 — 仅内部使用，API 不暴露 */
     @TableField(exist = false)
     private String customerName;

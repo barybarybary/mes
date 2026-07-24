@@ -103,8 +103,9 @@ public class PortalController {
     public Result<PageResult<PortalOrderVO>> listOrders(
             @RequestAttribute("portalCustomerId") Long customerId,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int pageSize) {
-        Page<PortalOrderVO> result = portalService.listOrders(customerId, page, pageSize);
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(required = false) Integer status) {
+        Page<PortalOrderVO> result = portalService.listOrders(customerId, page, pageSize, status);
         return Result.ok(new PageResult<>(result.getRecords(), result.getTotal(), page, pageSize));
     }
 
@@ -113,6 +114,22 @@ public class PortalController {
     public Result<PortalOrderVO> getOrder(@RequestAttribute("portalCustomerId") Long customerId,
                                           @PathVariable Long id) {
         return Result.ok(portalService.getOrderDetail(customerId, id));
+    }
+
+    @Operation(summary = "模拟支付")
+    @PutMapping("/orders/{id}/pay")
+    public Result<?> payOrder(@RequestAttribute("portalCustomerId") Long customerId,
+                               @PathVariable Long id) {
+        portalService.payOrder(customerId, id);
+        return Result.ok("支付成功");
+    }
+
+    @Operation(summary = "取消订单")
+    @PutMapping("/orders/{id}/cancel")
+    public Result<?> cancelOrder(@RequestAttribute("portalCustomerId") Long customerId,
+                                  @PathVariable Long id) {
+        portalService.cancelOrder(customerId, id);
+        return Result.ok("订单已取消");
     }
 
     // ==================== 个人中心 ====================

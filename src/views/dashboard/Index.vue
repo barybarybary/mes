@@ -6,8 +6,8 @@
       <p class="text-sm text-slate-400 mt-1">{{ currentDate }}</p>
     </div>
 
-    <!-- KPI 卡片（4个） -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <!-- KPI 卡片（5个，含库存预警） -->
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
       <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-700">
         <p class="text-sm text-slate-400 dark:text-slate-300 mb-2">待处理工单</p>
         <p class="text-3xl font-bold text-amber-500 tracking-tight">{{ cards.pendingOrders }}</p>
@@ -25,6 +25,35 @@
         <p class="text-3xl font-bold tracking-tight" :class="defectColor">{{ cards.defectRate }}%</p>
         <p class="text-xs text-slate-400 mt-1">今日不良 {{ cards.todayDefect }}</p>
       </div>
+      <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 cursor-pointer" :class="cards.unresolvedAlerts > 0 ? 'border-red-200 bg-red-50' : ''" @click="$router.push('/inventory')">
+        <p class="text-sm text-slate-400 dark:text-slate-300 mb-2">低库存预警</p>
+        <p class="text-3xl font-bold tracking-tight" :class="cards.unresolvedAlerts > 0 ? 'text-red-500' : 'text-emerald-500'">{{ cards.unresolvedAlerts ?? cards.lowStockCount }}</p>
+        <p class="text-xs text-slate-400 mt-1" v-if="cards.unresolvedAlerts > 0">点击前往库存页补货</p>
+        <p class="text-xs text-slate-400 mt-1" v-else>库存充足</p>
+      </div>
+    </div>
+
+    <!-- 低库存产品列表 -->
+    <div v-if="lowStockProducts.length > 0" class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-red-200 mb-6">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <h3 class="font-semibold text-red-600">⚠️ 库存预警</h3>
+          <p class="text-xs text-slate-400 mt-0.5">以下产品库存低于安全线（10），请及时补货</p>
+        </div>
+        <router-link to="/inventory" class="text-sky-500 text-sm hover:text-sky-600">前往库存管理 →</router-link>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div v-for="p in lowStockProducts.slice(0, 6)" :key="p.productId" class="flex items-center justify-between p-3 bg-red-50 rounded-xl border border-red-100">
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-slate-700 truncate">{{ p.productName }}</p>
+            <p class="text-xs text-slate-400">{{ p.productCode }} | {{ p.warehouseName }}</p>
+          </div>
+          <span class="text-red-500 font-bold text-lg ml-3 shrink-0">{{ p.quantity }}</span>
+        </div>
+      </div>
+      <p v-if="lowStockProducts.length > 6" class="text-xs text-slate-400 mt-3 text-center">
+        还有 {{ lowStockProducts.length - 6 }} 个低库存产品…
+      </p>
     </div>
 
     <!-- 产量趋势（全宽） -->
@@ -106,11 +135,14 @@ const cards = reactive({
   inProgressOrders: 0,
   todayOutput: 0,
   todayDefect: 0,
-  defectRate: 0
+  defectRate: 0,
+  unresolvedAlerts: 0,
+  lowStockCount: 0
 })
 
 const recentReports = ref([])
 const defectCauses = ref([])
+const lowStockProducts = ref([])
 
 const defectColor = computed(() => {
   const r = parseFloat(cards.defectRate)
@@ -151,6 +183,10 @@ async function loadData() {
     cards.todayOutput = d.todayOutput ?? 0
     cards.todayDefect = d.todayDefect ?? 0
     cards.defectRate = d.defectRate ?? 0
+    cards.unresolvedAlerts = d.unresolvedAlerts ?? 0
+    cards.lowStockCount = d.lowStockCount ?? 0
+
+    lowStockProducts.value = d.lowStockProducts || []
 
     // 最近报工表格
     recentReports.value = d.recentReportList || []

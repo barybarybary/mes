@@ -1,16 +1,17 @@
 package com.itheima.mes1.module.dashboard.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.itheima.mes1.common.Result;
 import com.itheima.mes1.common.annotation.RequirePermission;
 import com.itheima.mes1.module.dashboard.service.DashboardService;
+import com.itheima.mes1.module.inventory.entity.StockAlert;
+import com.itheima.mes1.module.inventory.mapper.StockAlertMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -21,6 +22,8 @@ public class DashboardController {
 
     @Autowired
     private DashboardService dashboardService;
+    @Autowired
+    private StockAlertMapper stockAlertMapper;
 
     // ==================== 报表驾驶舱 ====================
 
@@ -91,5 +94,30 @@ public class DashboardController {
     @GetMapping("/big-screen")
     public Result<Map<String, Object>> bigScreen() {
         return Result.ok(dashboardService.bigScreen());
+    }
+
+    // ==================== 库存预警 ====================
+
+    @RequirePermission("dashboard:view")
+    @Operation(summary = "未处理预警列表")
+    @GetMapping("/alerts")
+    public Result<List<StockAlert>> alerts() {
+        return Result.ok(stockAlertMapper.selectList(
+                new LambdaQueryWrapper<StockAlert>()
+                        .eq(StockAlert::getStatus, 0)
+                        .orderByDesc(StockAlert::getCreateTime)));
+    }
+
+    @RequirePermission("dashboard:view")
+    @Operation(summary = "标记预警已处理")
+    @PutMapping("/alerts/{id}/resolve")
+    public Result<?> resolveAlert(@PathVariable Long id) {
+        StockAlert alert = stockAlertMapper.selectById(id);
+        if (alert != null) {
+            alert.setStatus(1);
+            alert.setResolveTime(LocalDateTime.now());
+            stockAlertMapper.updateById(alert);
+        }
+        return Result.ok();
     }
 }

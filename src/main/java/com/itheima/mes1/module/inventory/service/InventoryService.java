@@ -22,6 +22,10 @@ public class InventoryService {
     private InventoryMapper inventoryMapper;
     @Autowired
     private InventoryTransactionMapper transactionMapper;
+    @Autowired
+    private com.itheima.mes1.module.inventory.mapper.StockAlertMapper stockAlertMapper;
+    @Autowired
+    private com.itheima.mes1.module.base.mapper.ProductMapper productMapper;
 
     public List<Inventory> listAll() {
         return inventoryMapper.selectAllWithDetail();
@@ -70,7 +74,7 @@ public class InventoryService {
         // 查库存 (出库不指定库位,按批次扣)
         LambdaQueryWrapper<Inventory> w = new LambdaQueryWrapper<Inventory>()
                 .eq(Inventory::getProductId, productId)
-                .eq(Inventory::getWarehouseId, warehouseId);
+                .eq(warehouseId != null, Inventory::getWarehouseId, warehouseId);
         if (batchNo != null) w.eq(Inventory::getBatchNo, batchNo);
 
         List<Inventory> list = inventoryMapper.selectList(w);
@@ -93,12 +97,41 @@ public class InventoryService {
                     deduct.negate(), before, inv.getQuantity(), orderNo, remark);
             remain = remain.subtract(deduct);
         }
+
+        // 出库后检查库存预警
+        checkAndAlert(productId);
+    }
+
+    /** 检查单个产品库存是否低于阈值，如低于且无未处理预警则生成预警 */
+    private void checkAndAlert(Long productId) {
+        BigDecimal threshold = new BigDecimal("10");
+        List<Inventory> allInv = inventoryMapper.selectByProduct(productId);
+        BigDecimal totalQty = allInv.stream()
+                .map(i -> i.getQuantity() != null ? i.getQuantity() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (totalQty.compareTo(threshold) <= 0) {
+            // 检查是否已有未处理预警
+            long count = stockAlertMapper.selectCount(
+                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.itheima.mes1.module.inventory.entity.StockAlert>()
+                            .eq(com.itheima.mes1.module.inventory.entity.StockAlert::getProductId, productId)
+                            .eq(com.itheima.mes1.module.inventory.entity.StockAlert::getStatus, 0));
+            if (count == 0) {
+                com.itheima.mes1.module.inventory.entity.StockAlert alert = new com.itheima.mes1.module.inventory.entity.StockAlert();
+                alert.setProductId(productId);
+                alert.setCurrentQty(totalQty);
+                alert.setThresholdQty(threshold);
+                alert.setStatus(0);
+                var p = productMapper.selectById(productId);
+                if (p != null) alert.setProductName(p.getName());
+                stockAlertMapper.insert(alert);
+            }
+        }
     }
 
     private Inventory findOrCreateInventory(Long productId, Long warehouseId, Long locationId, String batchNo) {
         LambdaQueryWrapper<Inventory> w = new LambdaQueryWrapper<Inventory>()
                 .eq(Inventory::getProductId, productId)
-                .eq(Inventory::getWarehouseId, warehouseId);
+                .eq(warehouseId != null, Inventory::getWarehouseId, warehouseId);
         if (batchNo != null) w.eq(Inventory::getBatchNo, batchNo);
 
         Inventory inv = inventoryMapper.selectOne(w);

@@ -19,6 +19,8 @@ const routes = [
       { path: '/base/warehouse', name: 'BaseWarehouse', component: () => import('@/views/base/warehouse/Index.vue'), meta: { title: '仓库管理', permission: 'base:warehouse:list' }},
       { path: '/base/equipment', name: 'BaseEquipment', component: () => import('@/views/base/equipment/Index.vue'), meta: { title: '设备管理', permission: 'base:equipment:list' }},
       { path: '/base/supplier', name: 'BaseSupplier', component: () => import('@/views/base/supplier/Index.vue'), meta: { title: '供应商管理', permission: 'base:supplier:list' }},
+      // 库存
+      { path: '/inventory', name: 'Inventory', component: () => import('@/views/inventory/Index.vue'), meta: { title: '库存管理', permission: 'inventory:list' }},
       // 生产
       { path: '/production/work-order', name: 'WorkOrder', component: () => import('@/views/production/work-order/Index.vue'), meta: { title: '生产工单', permission: 'production:work-order:list' }},
       { path: '/production/report', name: 'WorkReport', component: () => import('@/views/production/report/Index.vue'), meta: { title: '报工管理', permission: 'production:report:list' }},

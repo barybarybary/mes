@@ -1,9 +1,9 @@
 <template>
-  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-    <div class="px-6 py-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+    <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <h2 class="text-lg font-semibold text-slate-800">生产工单</h2>
-        <p class="text-xs text-slate-400 mt-1">管理生产工单和工序安排</p>
+        <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-200">生产工单</h2>
+        <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">管理生产工单和工序安排</p>
       </div>
       <div class="flex items-center gap-3">
         <el-select v-model="filterStatus" placeholder="全部状态" clearable class="w-32" @change="fetchData">
@@ -108,7 +108,7 @@
           </template>
         </el-table-column>
         <el-table-column label="顺序" width="80" align="center">
-          <template #default="{ $index }"><span class="text-slate-500">{{ $index + 1 }}</span></template>
+          <template #default="{ $index }"><span class="text-slate-500 dark:text-slate-400">{{ $index + 1 }}</span></template>
         </el-table-column>
         <el-table-column label="操作" width="80" align="center">
           <template #default="{ $index }">
@@ -185,11 +185,34 @@ onMounted(fetchData)
 .action-link.danger { color: #f43f5e; }
 .action-link.danger:hover { color: #be123c; }
 
-:deep(.page-table th.el-table__cell) { background-color: #f8fafc !important; color: #475569 !important; font-weight: 600 !important; font-size: 13px !important; }
+:deep(.page-table th.el-table__cell) {
+  background-color: #f8fafc !important;
+  color: #475569 !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+}
+html.dark :deep(.page-table th.el-table__cell) {
+  background-color: #1e293b !important;
+  color: #94a3b8 !important;
+}
+
 :deep(.custom-dialog .el-dialog) { border-radius: 16px !important; }
-:deep(.custom-dialog .el-dialog__header) { padding: 20px 24px 16px !important; margin-right: 0 !important; border-bottom: 1px solid #f1f5f9; }
+:deep(.custom-dialog .el-dialog__header) {
+  padding: 20px 24px 16px !important;
+  margin-right: 0 !important;
+  border-bottom: 1px solid #f1f5f9;
+}
+html.dark :deep(.custom-dialog .el-dialog__header) {
+  border-bottom-color: #334155 !important;
+}
 :deep(.custom-dialog .el-dialog__body) { padding: 24px !important; }
-:deep(.custom-dialog .el-dialog__footer) { padding: 16px 24px 20px !important; border-top: 1px solid #f1f5f9; }
+:deep(.custom-dialog .el-dialog__footer) {
+  padding: 16px 24px 20px !important;
+  border-top: 1px solid #f1f5f9;
+}
+html.dark :deep(.custom-dialog .el-dialog__footer) {
+  border-top-color: #334155 !important;
+}
 
 :deep(.el-input-number) {
   width: 100% !important;
@@ -217,6 +240,26 @@ onMounted(fetchData)
   background: #e2e8f0 !important;
   color: #334155 !important;
   border-color: #cbd5e1 !important;
+}
+html.dark :deep(.el-input-number .el-input-number__decrease) {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #94a3b8 !important;
+}
+html.dark :deep(.el-input-number .el-input-number__increase) {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #94a3b8 !important;
+}
+html.dark :deep(.el-input-number .el-input-number__decrease:hover) {
+  background: #475569 !important;
+  color: #cbd5e1 !important;
+  border-color: #64748b !important;
+}
+html.dark :deep(.el-input-number .el-input-number__increase:hover) {
+  background: #475569 !important;
+  color: #cbd5e1 !important;
+  border-color: #64748b !important;
 }
 :deep(.el-input-number .el-input-number__decrease:focus-visible) {
   outline: none !important;

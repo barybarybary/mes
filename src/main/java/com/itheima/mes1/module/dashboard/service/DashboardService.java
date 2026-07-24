@@ -31,6 +31,7 @@ public class DashboardService {
     @Autowired private com.itheima.mes1.module.production.mapper.QcRecordMapper qcRecordMapper;
     @Autowired private com.itheima.mes1.module.base.mapper.ProductMapper productMapper;
     @Autowired private com.itheima.mes1.module.base.mapper.ProcessMapper processMapper;
+    @Autowired private com.itheima.mes1.module.inventory.mapper.StockAlertMapper stockAlertMapper;
 
     // ==================== 首页概览卡片 ====================
 
@@ -134,6 +135,30 @@ public class DashboardService {
         data.put("salesGrowth", salesGrowth);
         data.put("orderGrowth", orderGrowth);
         data.put("warehouseMetrics", warehouseMetrics);
+
+        // 低库存预警：直接查库存表，≤阈值的产品
+        List<Map<String, Object>> lowStockProducts = new ArrayList<>();
+        List<Inventory> allInv = inventoryMapper.selectAllWithDetail();
+        BigDecimal threshold = new BigDecimal("10");
+        for (Inventory inv : allInv) {
+            if (inv.getQuantity() != null && inv.getQuantity().compareTo(threshold) <= 0) {
+                Map<String, Object> item = new LinkedHashMap<>();
+                item.put("productId", inv.getProductId());
+                item.put("productName", inv.getProductName() != null ? inv.getProductName() : "产品#" + inv.getProductId());
+                item.put("productCode", inv.getProductCode());
+                item.put("quantity", inv.getQuantity());
+                item.put("warehouseName", inv.getWarehouseName());
+                lowStockProducts.add(item);
+            }
+        }
+        data.put("lowStockProducts", lowStockProducts);
+        data.put("lowStockCount", lowStockProducts.size());
+
+        // 未处理预警数
+        long unresolvedAlerts = stockAlertMapper.selectCount(
+                new LambdaQueryWrapper<com.itheima.mes1.module.inventory.entity.StockAlert>()
+                        .eq(com.itheima.mes1.module.inventory.entity.StockAlert::getStatus, 0));
+        data.put("unresolvedAlerts", unresolvedAlerts);
         return data;
     }
 
@@ -469,6 +494,27 @@ public class DashboardService {
             pendingOrderList.add(item);
         }
         data.put("pendingOrderList", pendingOrderList);
+
+        // 低库存预警
+        List<Map<String, Object>> lowStockProducts = new ArrayList<>();
+        List<Inventory> allInv = inventoryMapper.selectAllWithDetail();
+        BigDecimal threshold = new BigDecimal("10");
+        for (Inventory inv : allInv) {
+            if (inv.getQuantity() != null && inv.getQuantity().compareTo(threshold) <= 0) {
+                Map<String, Object> item = new LinkedHashMap<>();
+                item.put("productId", inv.getProductId());
+                item.put("productName", inv.getProductName() != null ? inv.getProductName() : "产品#" + inv.getProductId());
+                item.put("productCode", inv.getProductCode());
+                item.put("quantity", inv.getQuantity());
+                item.put("warehouseName", inv.getWarehouseName());
+                lowStockProducts.add(item);
+            }
+        }
+        data.put("lowStockProducts", lowStockProducts);
+        data.put("lowStockCount", lowStockProducts.size());
+        data.put("unresolvedAlerts", stockAlertMapper.selectCount(
+                new LambdaQueryWrapper<com.itheima.mes1.module.inventory.entity.StockAlert>()
+                        .eq(com.itheima.mes1.module.inventory.entity.StockAlert::getStatus, 0)));
 
         return data;
     }

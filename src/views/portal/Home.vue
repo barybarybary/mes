@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-slate-50">
+  <div class="min-h-screen bg-slate-50 dark:bg-slate-900">
     <!-- 顶部导航 -->
     <PortalNavbar />
 
@@ -18,11 +18,11 @@
     <div class="max-w-6xl mx-auto px-4 py-10">
       <!-- 分类标签 -->
       <div class="flex flex-wrap gap-2 mb-6">
-        <button @click="filterCategory(null)" :class="!cid ? 'bg-sky-500 text-white' : 'bg-white text-slate-600 border-slate-200'" class="px-4 py-1.5 rounded-full text-sm border">全部</button>
-        <button v-for="c in categories" :key="c.id" @click="filterCategory(c.id)" :class="cid === c.id ? 'bg-sky-500 text-white' : 'bg-white text-slate-600 border-slate-200'" class="px-4 py-1.5 rounded-full text-sm border">{{ c.name }}</button>
+        <button @click="filterCategory(null)" :class="!cid ? 'bg-sky-500 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600'" class="px-4 py-1.5 rounded-full text-sm border transition">全部</button>
+        <button v-for="c in flatCategories" :key="c.id" @click="filterCategory(c.id)" :class="cid === c.id ? 'bg-sky-500 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600'" class="px-4 py-1.5 rounded-full text-sm border transition" :style="{ marginLeft: c._depth * 12 + 'px' }">{{ c.name }}</button>
       </div>
-      <h2 class="text-xl font-bold text-slate-800 mb-6">{{ cid ? '分类产品' : '推荐产品' }}</h2>
-      <div v-if="loading" class="text-center py-10 text-slate-400">加载中...</div>
+      <h2 class="text-xl font-bold text-slate-800 dark:text-slate-200 mb-6">{{ cid ? '分类产品' : '推荐产品' }}</h2>
+      <div v-if="loading" class="text-center py-10 text-slate-400 dark:text-slate-500">加载中...</div>
       <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         <ProductCard v-for="p in products" :key="p.id" :product="p" />
       </div>
@@ -35,16 +35,19 @@ import { ref, onMounted } from 'vue'
 import api from '@/api/portal'
 import PortalNavbar from './PortalNavbar.vue'
 import ProductCard from './ProductCard.vue'
+import { flattenTree } from '@/utils/portal'
 
 const products = ref([])
 const categories = ref([])
+const flatCategories = ref([]) // 展平的分类列表（用于标签显示）
 const cid = ref(null)
 const loading = ref(true)
 
 onMounted(async () => {
   try {
-    const [catRes] = await Promise.all([api.get('/categories')])
+    const catRes = await api.get('/categories')
     categories.value = catRes.data || []
+    flatCategories.value = flattenTree(categories.value)
   } catch { /* ignore */ }
   fetchProducts()
 })

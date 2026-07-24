@@ -1,9 +1,9 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 to-blue-100 py-8">
-    <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md mx-4">
+  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 py-8">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 w-full max-w-md mx-4">
       <div class="text-center mb-6">
-        <h2 class="text-xl font-bold text-slate-800">注册账号</h2>
-        <p class="text-sm text-slate-500 mt-1">加入造易商城</p>
+        <h2 class="text-xl font-bold text-slate-800 dark:text-slate-200">注册账号</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">加入造易商城</p>
       </div>
 
       <el-form ref="formRef" :model="form" :rules="rules" @submit.prevent="handleRegister">
@@ -25,12 +25,18 @@
         <el-form-item prop="phone">
           <el-input v-model="form.phone" placeholder="手机号" size="large" />
         </el-form-item>
+        <el-form-item prop="email">
+          <el-input v-model="form.email" placeholder="邮箱（选填）" size="large" />
+        </el-form-item>
+        <el-form-item prop="address">
+          <el-input v-model="form.address" placeholder="收货地址（选填）" size="large" />
+        </el-form-item>
         <el-button type="primary" size="large" class="w-full !rounded-lg" :loading="loading" @click="handleRegister">
           注 册
         </el-button>
       </el-form>
 
-      <div class="mt-4 text-center text-sm text-slate-500">
+      <div class="mt-4 text-center text-sm text-slate-500 dark:text-slate-400">
         已有账号？<router-link to="/portal/login" class="text-sky-500 hover:text-sky-600">立即登录</router-link>
       </div>
     </div>
@@ -42,8 +48,10 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import api from '@/api/portal'
+import { usePortalStore } from '@/stores/portal'
 
 const router = useRouter()
+const portalStore = usePortalStore()
 const loading = ref(false)
 const form = reactive({
   username: '', password: '', confirmPassword: '',
@@ -72,9 +80,7 @@ async function handleRegister() {
     const res = await api.post('/register', payload)
     if (res.code === 200 && res.data) {
       const { token, customer } = res.data
-      sessionStorage.setItem('portal_token', token)
-      localStorage.setItem('portal_token', token)
-      localStorage.setItem('portal_customer', JSON.stringify(customer))
+      portalStore.saveLogin(token, customer)
       ElMessage.success('注册成功！')
       router.push('/portal/home')
     }

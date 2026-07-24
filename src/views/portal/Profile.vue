@@ -1,11 +1,11 @@
 <template>
-  <div class="min-h-screen bg-slate-50">
+  <div class="min-h-screen bg-slate-50 dark:bg-slate-900">
     <PortalNavbar />
     <div class="max-w-2xl mx-auto px-4 py-8">
-      <h2 class="text-xl font-bold text-slate-800 mb-6">个人中心</h2>
+      <h2 class="text-xl font-bold text-slate-800 dark:text-slate-200 mb-6">个人中心</h2>
 
-      <div class="bg-white rounded-xl shadow-sm border p-6 mb-6">
-        <h3 class="font-medium text-slate-700 mb-4">基本信息</h3>
+      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border dark:border-slate-700 p-6 mb-6">
+        <h3 class="font-medium text-slate-700 dark:text-slate-300 mb-4">基本信息</h3>
         <el-form :model="profile" label-width="80px" label-position="left">
           <el-form-item label="用户名"><el-input :model-value="profile.username" disabled /></el-form-item>
           <el-form-item label="公司名称"><el-input v-model="profile.companyName" /></el-form-item>
@@ -17,8 +17,8 @@
         </el-form>
       </div>
 
-      <div class="bg-white rounded-xl shadow-sm border p-6">
-        <h3 class="font-medium text-slate-700 mb-4">修改密码</h3>
+      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border dark:border-slate-700 p-6">
+        <h3 class="font-medium text-slate-700 dark:text-slate-300 mb-4">修改密码</h3>
         <el-form :model="pwdForm" label-width="80px" label-position="left">
           <el-form-item label="原密码"><el-input v-model="pwdForm.oldPassword" type="password" show-password /></el-form-item>
           <el-form-item label="新密码"><el-input v-model="pwdForm.newPassword" type="password" show-password /></el-form-item>

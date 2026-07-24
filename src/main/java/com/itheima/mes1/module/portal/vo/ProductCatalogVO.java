@@ -12,5 +12,6 @@ public class ProductCatalogVO {
     private String unit;
     private BigDecimal price;
     private String imageUrl;
+    private Long categoryId;
     private String categoryName;
 }

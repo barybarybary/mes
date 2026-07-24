@@ -32,5 +32,14 @@ target/
 *.jar
 !gradle/wrapper/gradle-wrapper.jar
 
+# === Vue build outputs ===
+dist/
+src/main/resources/static/js/
+src/main/resources/static/css/
+
+# === Log files ===
+logs/
+*.gz
+
 # === OS ===
 Thumbs.db

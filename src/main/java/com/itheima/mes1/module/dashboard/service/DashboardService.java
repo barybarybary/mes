@@ -519,17 +519,22 @@ public class DashboardService {
                 new LambdaQueryWrapper<com.itheima.mes1.module.inventory.entity.StockAlert>()
                         .eq(com.itheima.mes1.module.inventory.entity.StockAlert::getStatus, 0)));
 
-        // 未读订单支付通知
-        long unreadNotifications = orderNotificationMapper.selectCount(
-                new LambdaQueryWrapper<OrderNotification>().eq(OrderNotification::getIsRead, 0));
-        data.put("unreadOrderNotifications", unreadNotifications);
+        // 未读订单支付通知（表可能尚未创建，容错处理）
+        try {
+            long unreadNotifications = orderNotificationMapper.selectCount(
+                    new LambdaQueryWrapper<OrderNotification>().eq(OrderNotification::getIsRead, 0));
+            data.put("unreadOrderNotifications", unreadNotifications);
 
-        List<OrderNotification> recentNotifications = orderNotificationMapper.selectList(
-                new LambdaQueryWrapper<OrderNotification>()
-                        .eq(OrderNotification::getIsRead, 0)
-                        .orderByDesc(OrderNotification::getCreateTime)
-                        .last("LIMIT 5"));
-        data.put("recentOrderNotifications", recentNotifications);
+            List<OrderNotification> recentNotifications = orderNotificationMapper.selectList(
+                    new LambdaQueryWrapper<OrderNotification>()
+                            .eq(OrderNotification::getIsRead, 0)
+                            .orderByDesc(OrderNotification::getCreateTime)
+                            .last("LIMIT 5"));
+            data.put("recentOrderNotifications", recentNotifications);
+        } catch (Exception e) {
+            data.put("unreadOrderNotifications", 0);
+            data.put("recentOrderNotifications", List.of());
+        }
 
         return data;
     }

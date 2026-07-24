@@ -7,6 +7,8 @@ import com.itheima.mes1.module.inventory.mapper.InventoryMapper;
 import com.itheima.mes1.module.inventory.mapper.InventoryTransactionMapper;
 import com.itheima.mes1.module.production.entity.WorkOrder;
 import com.itheima.mes1.module.production.mapper.WorkOrderMapper;
+import com.itheima.mes1.module.dashboard.entity.OrderNotification;
+import com.itheima.mes1.module.dashboard.mapper.OrderNotificationMapper;
 import com.itheima.mes1.module.sale.entity.SaleOrder;
 import com.itheima.mes1.module.sale.mapper.SaleOrderItemMapper;
 import com.itheima.mes1.module.sale.mapper.SaleOrderMapper;
@@ -32,6 +34,7 @@ public class DashboardService {
     @Autowired private com.itheima.mes1.module.base.mapper.ProductMapper productMapper;
     @Autowired private com.itheima.mes1.module.base.mapper.ProcessMapper processMapper;
     @Autowired private com.itheima.mes1.module.inventory.mapper.StockAlertMapper stockAlertMapper;
+    @Autowired private OrderNotificationMapper orderNotificationMapper;
 
     // ==================== 首页概览卡片 ====================
 
@@ -515,6 +518,18 @@ public class DashboardService {
         data.put("unresolvedAlerts", stockAlertMapper.selectCount(
                 new LambdaQueryWrapper<com.itheima.mes1.module.inventory.entity.StockAlert>()
                         .eq(com.itheima.mes1.module.inventory.entity.StockAlert::getStatus, 0)));
+
+        // 未读订单支付通知
+        long unreadNotifications = orderNotificationMapper.selectCount(
+                new LambdaQueryWrapper<OrderNotification>().eq(OrderNotification::getIsRead, 0));
+        data.put("unreadOrderNotifications", unreadNotifications);
+
+        List<OrderNotification> recentNotifications = orderNotificationMapper.selectList(
+                new LambdaQueryWrapper<OrderNotification>()
+                        .eq(OrderNotification::getIsRead, 0)
+                        .orderByDesc(OrderNotification::getCreateTime)
+                        .last("LIMIT 5"));
+        data.put("recentOrderNotifications", recentNotifications);
 
         return data;
     }

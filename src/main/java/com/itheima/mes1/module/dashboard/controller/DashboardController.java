@@ -3,6 +3,8 @@ package com.itheima.mes1.module.dashboard.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.itheima.mes1.common.Result;
 import com.itheima.mes1.common.annotation.RequirePermission;
+import com.itheima.mes1.module.dashboard.entity.OrderNotification;
+import com.itheima.mes1.module.dashboard.mapper.OrderNotificationMapper;
 import com.itheima.mes1.module.dashboard.service.DashboardService;
 import com.itheima.mes1.module.inventory.entity.StockAlert;
 import com.itheima.mes1.module.inventory.mapper.StockAlertMapper;
@@ -24,6 +26,8 @@ public class DashboardController {
     private DashboardService dashboardService;
     @Autowired
     private StockAlertMapper stockAlertMapper;
+    @Autowired
+    private OrderNotificationMapper orderNotificationMapper;
 
     // ==================== 报表驾驶舱 ====================
 
@@ -117,6 +121,43 @@ public class DashboardController {
             alert.setStatus(1);
             alert.setResolveTime(LocalDateTime.now());
             stockAlertMapper.updateById(alert);
+        }
+        return Result.ok();
+    }
+
+    // ==================== 订单支付通知 ====================
+
+    @RequirePermission("dashboard:view")
+    @Operation(summary = "未读订单通知列表")
+    @GetMapping("/order-notifications")
+    public Result<List<OrderNotification>> orderNotifications() {
+        return Result.ok(orderNotificationMapper.selectList(
+                new LambdaQueryWrapper<OrderNotification>()
+                        .eq(OrderNotification::getIsRead, 0)
+                        .orderByDesc(OrderNotification::getCreateTime)));
+    }
+
+    @RequirePermission("dashboard:view")
+    @Operation(summary = "标记通知已读")
+    @PutMapping("/order-notifications/{id}/read")
+    public Result<?> markRead(@PathVariable Long id) {
+        OrderNotification notification = orderNotificationMapper.selectById(id);
+        if (notification != null) {
+            notification.setIsRead(1);
+            orderNotificationMapper.updateById(notification);
+        }
+        return Result.ok();
+    }
+
+    @RequirePermission("dashboard:view")
+    @Operation(summary = "全部标记已读")
+    @PutMapping("/order-notifications/read-all")
+    public Result<?> markAllRead() {
+        List<OrderNotification> unread = orderNotificationMapper.selectList(
+                new LambdaQueryWrapper<OrderNotification>().eq(OrderNotification::getIsRead, 0));
+        for (OrderNotification n : unread) {
+            n.setIsRead(1);
+            orderNotificationMapper.updateById(n);
         }
         return Result.ok();
     }

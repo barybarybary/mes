@@ -29,6 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.itheima.mes1.module.inventory.service.InventoryService;
 import com.itheima.mes1.module.sale.entity.Delivery;
 import com.itheima.mes1.module.sale.mapper.DeliveryMapper;
+import com.itheima.mes1.module.dashboard.entity.OrderNotification;
+import com.itheima.mes1.module.dashboard.mapper.OrderNotificationMapper;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -48,6 +50,7 @@ public class PortalService {
     @Autowired private ProductCategoryMapper categoryMapper;
     @Autowired private InventoryService inventoryService;
     @Autowired private DeliveryMapper deliveryMapper;
+    @Autowired private OrderNotificationMapper orderNotificationMapper;
     @Autowired private RedisTemplate<String, Object> redisTemplate;
     @Autowired private BCryptPasswordEncoder passwordEncoder;
 
@@ -333,6 +336,16 @@ public class PortalService {
         order.setPaid(1);
         order.setStatus(2); // 已支付
         saleOrderMapper.updateById(order);
+
+        // 写入订单支付通知，后台管理员可见
+        PortalCustomer customer = customerMapper.selectById(customerId);
+        OrderNotification notification = new OrderNotification();
+        notification.setOrderId(order.getId());
+        notification.setOrderNo(order.getOrderNo());
+        notification.setCustomerName(customer != null ? customer.getCompanyName() : "客户#" + customerId);
+        notification.setTotalAmount(order.getTotalAmount());
+        notification.setIsRead(0);
+        orderNotificationMapper.insert(notification);
     }
 
     /** 取消订单（仅 status=1 待付款时可取消） */

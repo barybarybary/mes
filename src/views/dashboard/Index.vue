@@ -6,8 +6,8 @@
       <p class="text-sm text-slate-400 mt-1">{{ currentDate }}</p>
     </div>
 
-    <!-- KPI 卡片（5个，含库存预警） -->
-    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+    <!-- KPI 卡片（6个，含订单通知和库存预警） -->
+    <div class="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
       <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-700">
         <p class="text-sm text-slate-400 dark:text-slate-300 mb-2">待处理工单</p>
         <p class="text-3xl font-bold text-amber-500 tracking-tight">{{ cards.pendingOrders }}</p>
@@ -25,7 +25,14 @@
         <p class="text-3xl font-bold tracking-tight" :class="defectColor">{{ cards.defectRate }}%</p>
         <p class="text-xs text-slate-400 mt-1">今日不良 {{ cards.todayDefect }}</p>
       </div>
-      <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 cursor-pointer" :class="cards.unresolvedAlerts > 0 ? 'border-red-200 bg-red-50' : ''" @click="$router.push('/inventory')">
+      <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 cursor-pointer relative" :class="cards.unreadOrderNotifications > 0 ? 'border-sky-300 bg-sky-50 dark:bg-sky-900/20' : ''" @click="showNotifications = !showNotifications">
+        <p class="text-sm text-slate-400 dark:text-slate-300 mb-2">📬 新订单通知</p>
+        <p class="text-3xl font-bold tracking-tight" :class="cards.unreadOrderNotifications > 0 ? 'text-sky-500' : 'text-emerald-500'">{{ cards.unreadOrderNotifications ?? 0 }}</p>
+        <p class="text-xs text-slate-400 mt-1" v-if="cards.unreadOrderNotifications > 0">有客户支付了新订单</p>
+        <p class="text-xs text-slate-400 mt-1" v-else>无新通知</p>
+        <span v-if="cards.unreadOrderNotifications > 0" class="absolute top-3 right-3 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse"></span>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 cursor-pointer" :class="cards.unresolvedAlerts > 0 ? 'border-red-200 bg-red-50 dark:bg-red-900/20' : ''" @click="$router.push('/inventory')">
         <p class="text-sm text-slate-400 dark:text-slate-300 mb-2">低库存预警</p>
         <p class="text-3xl font-bold tracking-tight" :class="cards.unresolvedAlerts > 0 ? 'text-red-500' : 'text-emerald-500'">{{ cards.unresolvedAlerts ?? cards.lowStockCount }}</p>
         <p class="text-xs text-slate-400 mt-1" v-if="cards.unresolvedAlerts > 0">点击前往库存页补货</p>
@@ -54,6 +61,28 @@
       <p v-if="lowStockProducts.length > 6" class="text-xs text-slate-400 mt-3 text-center">
         还有 {{ lowStockProducts.length - 6 }} 个低库存产品…
       </p>
+    </div>
+
+    <!-- 最近订单通知 -->
+    <div v-if="showNotifications && recentNotifications.length > 0" class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-sky-200 dark:border-sky-700 mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="font-semibold text-slate-800 dark:text-slate-200">📬 新订单通知</h3>
+          <p class="text-xs text-slate-400 mt-0.5">客户已支付的订单</p>
+        </div>
+        <el-button text type="primary" size="small" @click="markAllRead">全部已读</el-button>
+      </div>
+      <div class="space-y-2">
+        <div v-for="n in recentNotifications" :key="n.id" class="flex items-center justify-between p-3 bg-sky-50 dark:bg-sky-900/20 rounded-xl border border-sky-100 dark:border-sky-800">
+          <div>
+            <p class="text-sm font-medium text-slate-700 dark:text-slate-200">
+              {{ n.customerName }} <span class="text-slate-400 font-normal text-xs ml-1">提交了新订单</span>
+            </p>
+            <p class="text-xs text-slate-400 mt-0.5">{{ n.orderNo }} · ¥{{ n.totalAmount }} · {{ formatTime(n.createTime) }}</p>
+          </div>
+          <el-button text type="primary" size="small" @click="markRead(n.id)">已读</el-button>
+        </div>
+      </div>
     </div>
 
     <!-- 产量趋势（全宽） -->
@@ -137,12 +166,15 @@ const cards = reactive({
   todayDefect: 0,
   defectRate: 0,
   unresolvedAlerts: 0,
-  lowStockCount: 0
+  lowStockCount: 0,
+  unreadOrderNotifications: 0
 })
 
 const recentReports = ref([])
 const defectCauses = ref([])
 const lowStockProducts = ref([])
+const recentNotifications = ref([])
+const showNotifications = ref(false)
 
 const defectColor = computed(() => {
   const r = parseFloat(cards.defectRate)
@@ -185,8 +217,13 @@ async function loadData() {
     cards.defectRate = d.defectRate ?? 0
     cards.unresolvedAlerts = d.unresolvedAlerts ?? 0
     cards.lowStockCount = d.lowStockCount ?? 0
+    cards.unreadOrderNotifications = d.unreadOrderNotifications ?? 0
 
     lowStockProducts.value = d.lowStockProducts || []
+    recentNotifications.value = d.recentOrderNotifications || []
+    if (cards.unreadOrderNotifications > 0) {
+      showNotifications.value = true
+    }
 
     // 最近报工表格
     recentReports.value = d.recentReportList || []
@@ -334,6 +371,31 @@ function renderDefectCause(el, causes) {
 
 function handleResize() {
   chartInstances.forEach(c => { try { c.resize() } catch (e) { /* ignore */ } })
+}
+
+async function markRead(id) {
+  try {
+    await api.put(`/dashboard/order-notifications/${id}/read`)
+    recentNotifications.value = recentNotifications.value.filter(n => n.id !== id)
+    cards.unreadOrderNotifications = Math.max(0, cards.unreadOrderNotifications - 1)
+    if (recentNotifications.value.length === 0) showNotifications.value = false
+  } catch { /* ignore */ }
+}
+
+async function markAllRead() {
+  try {
+    await api.put('/dashboard/order-notifications/read-all')
+    recentNotifications.value = []
+    cards.unreadOrderNotifications = 0
+    showNotifications.value = false
+  } catch { /* ignore */ }
+}
+
+function formatTime(time) {
+  if (!time) return ''
+  const d = new Date(time)
+  const pad = n => String(n).padStart(2, '0')
+  return `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
 onMounted(() => {

@@ -175,6 +175,9 @@ const defectCauses = ref([])
 const lowStockProducts = ref([])
 const recentNotifications = ref([])
 const showNotifications = ref(false)
+let lastNotificationCount = 0
+let pollTimer = null
+let notificationPermission = false
 
 const defectColor = computed(() => {
   const r = parseFloat(cards.defectRate)
@@ -398,12 +401,79 @@ function formatTime(time) {
   return `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
+// ==================== 浏览器通知 ====================
+
+async function requestNotificationPermission() {
+  if (!('Notification' in window)) return
+  if (Notification.permission === 'granted') {
+    notificationPermission = true
+  } else if (Notification.permission !== 'denied') {
+    const result = await Notification.requestPermission()
+    notificationPermission = result === 'granted'
+  }
+}
+
+function showBrowserNotification(title, body) {
+  if (!notificationPermission) return
+  try {
+    const n = new Notification(title, {
+      body,
+      icon: '/favicon.ico',
+      tag: 'order-notification',
+      requireInteraction: true
+    })
+    n.onclick = () => {
+      window.focus()
+      n.close()
+    }
+    // 5秒后自动关闭
+    setTimeout(() => n.close(), 5000)
+  } catch { /* ignore */ }
+}
+
+async function pollNotifications() {
+  try {
+    const res = await api.get('/dashboard/mes-summary')
+    if (res.code !== 200) return
+    const d = res.data
+    const currentCount = d.unreadOrderNotifications ?? 0
+
+    // 检测到新通知
+    if (currentCount > lastNotificationCount && lastNotificationCount > 0) {
+      const newCount = currentCount - lastNotificationCount
+      const latest = d.recentOrderNotifications?.[0]
+      if (latest) {
+        showBrowserNotification(
+          `📦 ${latest.customerName} 的新订单`,
+          `${latest.orderNo} · ¥${latest.totalAmount}${newCount > 1 ? `（共${newCount}条新通知）` : ''}`
+        )
+      } else {
+        showBrowserNotification('📬 新订单通知', `您有 ${newCount} 条新的订单支付通知`)
+      }
+    }
+
+    lastNotificationCount = currentCount
+    // 同步更新卡片数据（静默刷新）
+    cards.unreadOrderNotifications = currentCount
+    recentNotifications.value = d.recentOrderNotifications || []
+    if (currentCount > 0) showNotifications.value = true
+  } catch { /* ignore */ }
+}
+
+// ==================== 生命周期 ====================
+
 onMounted(() => {
-  loadData()
+  loadData().then(() => {
+    lastNotificationCount = cards.unreadOrderNotifications
+  })
+  requestNotificationPermission()
+  // 每30秒轮询新订单通知
+  pollTimer = setInterval(pollNotifications, 30000)
   window.addEventListener('resize', handleResize)
 })
 
 onBeforeUnmount(() => {
+  clearInterval(pollTimer)
   window.removeEventListener('resize', handleResize)
   disposeAll()
 })

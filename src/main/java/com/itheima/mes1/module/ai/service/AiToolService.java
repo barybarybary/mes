@@ -443,7 +443,7 @@ public class AiToolService {
                     r.getReportType(), r.getTimeRange(),
                     r.getCreateTime() != null ? r.getCreateTime().toLocalDate().toString() : "-"));
         }
-        sb.append("\n如需下载，请访问报表中心页面。");
+        sb.append("\n如需下载，请告诉我 reportId。");
         return sb.toString();
     }
 

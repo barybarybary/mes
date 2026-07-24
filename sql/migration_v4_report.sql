@@ -36,14 +36,7 @@ CREATE TABLE IF NOT EXISTS report_schedule (
     INDEX idx_status (status)
 ) COMMENT '报表定时发送配置';
 
--- 菜单：报表中心 (使用较大ID避免与已有菜单冲突)
-INSERT IGNORE INTO sys_menu (id, parent_id, name, type, path, component, icon, permission, sort) VALUES
-(170, 0,  '报表中心', 1, '/report',     NULL,                   'DocumentChecked', NULL,             17),
-(171, 170,'报表中心', 2, '/report',     'report/index',         NULL,              'report:manage',  1);
-
--- 给管理员角色授权
-INSERT IGNORE INTO sys_role_menu (role_id, menu_id)
-SELECT r.id, 170 FROM sys_role r WHERE r.code = 'admin';
-
-INSERT IGNORE INTO sys_role_menu (role_id, menu_id)
-SELECT r.id, 171 FROM sys_role r WHERE r.code = 'admin';
+-- 菜单：报表中心 — 已移除，不再插入
+-- 如果数据库已有，执行以下 SQL 清除：
+-- DELETE FROM sys_role_menu WHERE menu_id IN (170, 171);
+-- DELETE FROM sys_menu WHERE id IN (170, 171);

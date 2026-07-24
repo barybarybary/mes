@@ -29,8 +29,6 @@ const routes = [
       { path: '/knowledge', name: 'Knowledge', component: () => import('@/views/knowledge/Index.vue'), meta: { title: '知识库', permission: 'knowledge:doc:list' }},
       // AI助手
       { path: '/ai', name: 'AiChat', component: () => import('@/views/ai/Index.vue'), meta: { title: 'AI助手', permission: 'ai:chat:list' }},
-      // 报表中心
-      { path: '/report', name: 'ReportCenter', component: () => import('@/views/report/Index.vue'), meta: { title: '报表中心', permission: 'report:manage' }},
     ]
   },
   { path: '/login', name: 'Login', component: () => import('@/views/login/Index.vue'), meta: { title: '登录' }},

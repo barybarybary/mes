@@ -1,9 +1,9 @@
 <template>
-  <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
-    <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div class="px-6 py-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-200">报工管理</h2>
-        <p class="text-xs text-slate-400 dark:text-slate-300 mt-1">管理工序报工和生产数据统计</p>
+        <h2 class="text-lg font-semibold text-slate-800">报工管理</h2>
+        <p class="text-xs text-slate-400 mt-1">管理工序报工和生产数据统计</p>
       </div>
       <el-button type="primary" @click="openDialog()" class="h-10 px-5 rounded-xl font-medium">
         <el-icon class="mr-1"><Plus /></el-icon>新增报工
@@ -30,7 +30,7 @@
         <el-table-column prop="remark" label="备注" min-width="150" show-overflow-tooltip />
       </el-table>
       <div class="mt-5 flex justify-end">
-        <el-pagination v-model:current-page="page" v-model:page-size="pageSize" :total="total" :page-sizes="[8]" layout="prev, pager, next, sizes, total" background @current-change="fetchData" @size-change="fetchData" />
+        <el-pagination v-model:current-page="page" v-model:page-size="pageSize" :total="total" :page-sizes="[10,20,50]" layout="prev, pager, next, sizes, total" background @current-change="fetchData" @size-change="fetchData" />
       </div>
     </div>
 
@@ -75,6 +75,11 @@
             </el-form-item>
           </el-col>
         </el-row>
+        <el-form-item label="使用设备">
+          <el-select v-model="form.equipmentId" class="w-full" placeholder="选择设备（可选）" clearable>
+            <el-option v-for="e in equipmentList" :key="e.id" :value="e.id" :label="e.name + ' (' + e.code + ')'" :disabled="e.status === 'SCRAPPED'" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="form.remark" placeholder="请输入备注" />
         </el-form-item>
@@ -92,26 +97,24 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import api from '@/api'
 
-const list = ref([]), loading = ref(false), page = ref(1), total = ref(0), pageSize = ref(8)
-const allData = ref([])
-const visible = ref(false), form = reactive({ workOrderId: null, workOrderProcessId: null, worker: '', quantity: 0, qualifiedQty: 0, scrapQty: 0, reportDate: '', remark: '' })
-const workOrders = ref([]), woProcesses = ref([])
+const list = ref([]), loading = ref(false), page = ref(1), total = ref(0), pageSize = ref(10)
+const visible = ref(false), form = reactive({ workOrderId: null, workOrderProcessId: null, worker: '', quantity: 0, qualifiedQty: 0, scrapQty: 0, reportDate: '', remark: '', equipmentId: null })
+const workOrders = ref([]), woProcesses = ref([]), equipmentList = ref([])
 
 async function fetchData() {
   loading.value = true
   try {
-    const r = await api.get('/production/report')
+    const r = await api.get('/production/report', { params: { page: page.value, pageSize: pageSize.value } })
     if (r.code === 200) {
-      allData.value = r.data.list || r.data || []
-      total.value = allData.value.length
-      const start = (page.value - 1) * pageSize.value
-      list.value = allData.value.slice(start, start + pageSize.value)
+      list.value = r.data.list || []
+      total.value = r.data.total || 0
     }
   } finally { loading.value = false }
 }
 
 async function openDialog() {
   workOrders.value = (await api.get('/production/work-order', { params: { pageSize: 999 } })).data?.list || []
+  equipmentList.value = (await api.get('/base/equipment', { params: { pageSize: 999 } })).data?.list || []
   visible.value = true
 }
 

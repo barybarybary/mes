@@ -1,5 +1,6 @@
 package com.itheima.mes1.module.portal.vo;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import java.math.BigDecimal;
 
@@ -15,5 +16,6 @@ public class ProductCatalogVO {
     private Long categoryId;
     private String categoryName;
     /** 库存总量 */
+    @JsonProperty("stockQty")
     private Integer stockQuantity;
 }

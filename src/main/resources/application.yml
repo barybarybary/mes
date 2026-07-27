@@ -134,6 +134,6 @@ logging:
 langchain4j:
   openai:
     api-key: ${DEEPSEEK_API_KEY:}
-    model-name: deepseek-chat
+    model-name: deepseek-v4-pro
     base-url: https://api.deepseek.com
     temperature: 0.7

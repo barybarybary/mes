@@ -1,21 +1,17 @@
 package com.itheima.mes1.module.portal.service;
 
-import cn.hutool.json.JSONUtil;
+import com.itheima.mes1.module.ai.service.AiToolExecutor;
 import com.itheima.mes1.module.ai.service.AiToolService;
-import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.agent.tool.ToolSpecifications;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
-import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.openai.OpenAiChatModel;
-import dev.langchain4j.model.output.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.lang.reflect.Method;
 import java.util.*;
 
 /**
@@ -35,7 +31,7 @@ public class PortalAiService {
     private String baseUrl;
 
     private volatile OpenAiChatModel chatModel;
-    private volatile List<ToolSpecification> toolSpecifications;
+    private volatile AiToolExecutor toolExecutor;
     private volatile boolean initAttempted;
 
     private synchronized void ensureInitialized() {
@@ -46,7 +42,8 @@ public class PortalAiService {
                 .apiKey(apiKey).modelName(modelName).baseUrl(baseUrl)
                 .temperature(0.5)
                 .build();
-        toolSpecifications = ToolSpecifications.toolSpecificationsFrom(toolService);
+        List<ToolSpecification> specs = ToolSpecifications.toolSpecificationsFrom(toolService);
+        toolExecutor = new AiToolExecutor(toolService, chatModel, specs);
     }
 
     /**
@@ -80,59 +77,9 @@ public class PortalAiService {
             messages.add(SystemMessage.from(systemPrompt));
             messages.add(UserMessage.from(question));
 
-            return callWithTools(messages);
+            return toolExecutor.callWithTools(messages);
         } catch (Exception e) {
             return "抱歉，AI 客服暂时无法响应：" + e.getMessage();
-        }
-    }
-
-    private String callWithTools(List<ChatMessage> messages) {
-        int maxRounds = 3;
-        for (int round = 0; round < maxRounds; round++) {
-            Response<dev.langchain4j.data.message.AiMessage> response =
-                    chatModel.generate(messages, toolSpecifications);
-            dev.langchain4j.data.message.AiMessage aiMessage = response.content();
-
-            if (!aiMessage.hasToolExecutionRequests()) {
-                return aiMessage.text();
-            }
-
-            messages.add(aiMessage);
-            for (ToolExecutionRequest req : aiMessage.toolExecutionRequests()) {
-                String toolResult = executeTool(req.name(), req.arguments());
-                messages.add(ToolExecutionResultMessage.from(req, toolResult));
-            }
-        }
-        Response<dev.langchain4j.data.message.AiMessage> finalResp = chatModel.generate(messages);
-        return finalResp.content().text();
-    }
-
-    private String executeTool(String toolName, String argumentsJson) {
-        try {
-            Method[] methods = toolService.getClass().getMethods();
-            for (Method m : methods) {
-                if (m.getName().equals(toolName)) {
-                    Map<String, Object> args = argumentsJson != null && !argumentsJson.isEmpty()
-                            ? JSONUtil.parseObj(argumentsJson) : Map.of();
-                    Object[] params = new Object[m.getParameterCount()];
-                    java.lang.reflect.Parameter[] javaParams = m.getParameters();
-                    for (int i = 0; i < javaParams.length; i++) {
-                        Object value = args.get(javaParams[i].getName());
-                        if (value != null) {
-                            Class<?> type = javaParams[i].getType();
-                            if ((type == Integer.class || type == int.class) && value instanceof Number n) {
-                                params[i] = n.intValue();
-                            } else {
-                                params[i] = value.toString();
-                            }
-                        }
-                    }
-                    return (String) m.invoke(toolService, params);
-                }
-            }
-            return "工具 " + toolName + " 不可用";
-        } catch (Exception e) {
-            return "查询失败: " + e.getMessage();
         }
     }
 }

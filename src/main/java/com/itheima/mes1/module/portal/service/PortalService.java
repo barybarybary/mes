@@ -34,6 +34,7 @@ import com.itheima.mes1.module.dashboard.mapper.OrderNotificationMapper;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -262,16 +263,15 @@ public class PortalService {
         order.setOrderNo("SO" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
                 + RandomUtil.randomNumbers(4));
         order.setCustomerId(customerId);
+        order.setCustomerName(customer != null ? customer.getCompanyName() : "客户#" + customerId);
         order.setOrderDate(LocalDate.now());
         order.setDeliveryDate(req.getDeliveryDate());
         order.setStatus(1);
         order.setPaid(0); // 初始未付款
-        // 地址拼入备注
-        String fullRemark = req.getRemark() != null ? req.getRemark() : "";
-        if (req.getAddress() != null && !req.getAddress().isBlank()) {
-            fullRemark = "【收货地址：" + req.getAddress() + "】" + (fullRemark.isEmpty() ? "" : " " + fullRemark);
-        }
-        order.setRemark(fullRemark.isEmpty() ? null : fullRemark);
+        order.setReceiverName(req.getReceiverName());
+        order.setReceiverPhone(req.getReceiverPhone());
+        order.setReceiverAddress(req.getReceiverAddress());
+        order.setRemark(req.getRemark() != null && !req.getRemark().isBlank() ? req.getRemark() : null);
         order.setCreateBy(customerId);
         saleOrderMapper.insert(order);
 
@@ -293,8 +293,16 @@ public class PortalService {
             soi.setProductId(item.getProductId());
             soi.setQuantity(BigDecimal.valueOf(item.getQuantity()));
             soi.setUnit(p.getUnit());
-            soi.setPrice(p.getPrice());
-            soi.setAmount(p.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
+            BigDecimal price;
+            if (p.getPrice() != null && p.getPrice().compareTo(BigDecimal.ZERO) > 0) {
+                price = p.getPrice();
+            } else if (item.getPrice() != null && item.getPrice().compareTo(BigDecimal.ZERO) > 0) {
+                price = item.getPrice();
+            } else {
+                price = BigDecimal.ZERO;
+            }
+            soi.setPrice(price);
+            soi.setAmount(price.multiply(BigDecimal.valueOf(item.getQuantity())));
             total = total.add(soi.getAmount());
             saleOrderItemMapper.insert(soi);
         }
@@ -303,6 +311,19 @@ public class PortalService {
 
         // 清空购物车
         clearCart(customerId);
+
+        // 写入订单通知（下单即通知管理员，不等到支付）
+        try {
+            OrderNotification notification = new OrderNotification();
+            notification.setOrderId(order.getId());
+            notification.setOrderNo(order.getOrderNo());
+            notification.setCustomerName(customer != null ? customer.getCompanyName() : "客户#" + customerId);
+            notification.setTotalAmount(total);
+            notification.setIsRead(0);
+            orderNotificationMapper.insert(notification);
+        } catch (Exception ignored) {
+            // order_notification 表可能不存在，容错
+        }
 
         return getOrderDetail(customerId, order.getId());
     }
@@ -350,14 +371,18 @@ public class PortalService {
         saleOrderMapper.updateById(order);
 
         // 写入订单支付通知，后台管理员可见
-        PortalCustomer customer = customerMapper.selectById(customerId);
-        OrderNotification notification = new OrderNotification();
-        notification.setOrderId(order.getId());
-        notification.setOrderNo(order.getOrderNo());
-        notification.setCustomerName(customer != null ? customer.getCompanyName() : "客户#" + customerId);
-        notification.setTotalAmount(order.getTotalAmount());
-        notification.setIsRead(0);
-        orderNotificationMapper.insert(notification);
+        try {
+            PortalCustomer customer = customerMapper.selectById(customerId);
+            OrderNotification notification = new OrderNotification();
+            notification.setOrderId(order.getId());
+            notification.setOrderNo(order.getOrderNo());
+            notification.setCustomerName(customer != null ? customer.getCompanyName() : "客户#" + customerId);
+            notification.setTotalAmount(order.getTotalAmount());
+            notification.setIsRead(0);
+            orderNotificationMapper.insert(notification);
+        } catch (Exception ignored) {
+            // order_notification 表可能不存在，容错
+        }
     }
 
     /** 取消订单（仅 status=1 待付款时可取消） */
@@ -381,6 +406,110 @@ public class PortalService {
         }
     }
 
+    /** 根据订单状态构建进度时间线 */
+    private List<OrderProgressItemVO> buildProgressTimeline(SaleOrder order, Delivery latestDelivery) {
+        List<OrderProgressItemVO> timeline = new ArrayList<>();
+        Integer status = order.getStatus();
+
+        // 已取消 — 只显示到取消前的步骤 + 已取消
+        if (status != null && status == 6) {
+            timeline.add(buildItem("已下单", "订单已提交，等待付款", order.getCreateTime(), "completed", "clock"));
+            timeline.add(buildItem("已取消", "订单已取消，款项将退回", order.getUpdateTime(), "completed", "close"));
+            // 如果有发货也显示
+            if (latestDelivery != null && latestDelivery.getDeliveryNo() != null) {
+                timeline.add(2, buildItem("部分发货", "部分商品已发出: " + latestDelivery.getDeliveryNo(),
+                        latestDelivery.getDeliveryDate() != null ? latestDelivery.getDeliveryDate().atStartOfDay() : latestDelivery.getCreateTime(),
+                        "completed", "truck"));
+            }
+            return timeline;
+        }
+
+        // === 步骤1: 已下单 ===
+        timeline.add(buildItem("已下单", "订单已提交，等待付款",
+                order.getCreateTime(), "completed", "clock"));
+
+        // === 步骤2: 已付款 ===
+        boolean paid = order.getPaid() != null && order.getPaid() == 1;
+        String payStatus = paid || (status != null && status >= 2) ? "completed" : (status != null && status == 1 ? "active" : "pending");
+        String payDesc;
+        if ("completed".equals(payStatus)) {
+            payDesc = "付款成功，订单进入审核流程";
+        } else if ("active".equals(payStatus)) {
+            payDesc = "等待付款";
+        } else {
+            payDesc = "待付款后进入审核";
+        }
+        timeline.add(buildItem("已付款", payDesc,
+                ("completed".equals(payStatus) || "active".equals(payStatus)) && paid ? order.getUpdateTime() : null,
+                payStatus, "wallet"));
+
+        // === 步骤3: 生产中 ===
+        String prodStatus;
+        String prodDesc;
+        if (status != null && status >= 4) {
+            prodStatus = "completed";
+            prodDesc = "生产已完成，进入发货环节";
+        } else if (status != null && status == 3) {
+            prodStatus = "active";
+            prodDesc = "正在生产中，请耐心等待";
+        } else {
+            prodStatus = "pending";
+            prodDesc = "付款后将安排生产";
+        }
+        timeline.add(buildItem("生产中", prodDesc, null, prodStatus, "setting"));
+
+        // === 步骤4: 已发货 ===
+        String shipStatus;
+        String shipDesc;
+        LocalDateTime shipTime = null;
+        if (status != null && status >= 5) {
+            shipStatus = "completed";
+            shipDesc = "货物已送达";
+            shipTime = order.getUpdateTime();
+        } else if (status != null && status == 4) {
+            shipStatus = "active";
+            shipDesc = "货物运输途中";
+            if (latestDelivery != null) {
+                shipTime = latestDelivery.getDeliveryDate() != null
+                        ? latestDelivery.getDeliveryDate().atStartOfDay()
+                        : latestDelivery.getCreateTime();
+                shipDesc = latestDelivery.getDeliveryNo() != null
+                        ? "运输途中，发货单号: " + latestDelivery.getDeliveryNo()
+                        : "运输途中";
+            }
+        } else {
+            shipStatus = "pending";
+            shipDesc = "等待发货";
+        }
+        timeline.add(buildItem("已发货", shipDesc, shipTime, shipStatus, "truck"));
+
+        // === 步骤5: 已完成 ===
+        String doneStatus;
+        String doneDesc;
+        if (status != null && status == 5) {
+            doneStatus = "completed";
+            doneDesc = "订单已完成，感谢您的购买";
+        } else {
+            doneStatus = "pending";
+            doneDesc = "待订单完成后确认收货";
+        }
+        timeline.add(buildItem("已完成", doneDesc,
+                "completed".equals(doneStatus) ? order.getUpdateTime() : null,
+                doneStatus, "check"));
+
+        return timeline;
+    }
+
+    private OrderProgressItemVO buildItem(String title, String description, LocalDateTime time, String status, String icon) {
+        OrderProgressItemVO item = new OrderProgressItemVO();
+        item.setTitle(title);
+        item.setDescription(description);
+        item.setTime(time);
+        item.setStatus(status);
+        item.setIcon(icon);
+        return item;
+    }
+
     private PortalOrderVO buildOrderVO(SaleOrder order) {
         PortalOrderVO vo = new PortalOrderVO();
         vo.setId(order.getId());
@@ -393,16 +522,29 @@ public class PortalService {
         vo.setRemark(order.getRemark());
         vo.setCreateTime(order.getCreateTime());
 
+        // 填充客户收货信息
+        PortalCustomer customer = customerMapper.selectById(order.getCustomerId());
+        if (customer != null) {
+            vo.setCompanyName(customer.getCompanyName());
+            vo.setContactName(customer.getContactName());
+            vo.setPhone(customer.getPhone());
+            vo.setAddress(customer.getAddress());
+        }
+
         // 关联发货信息：找该订单最新的发货单
+        Delivery latestDelivery = null;
         List<Delivery> deliveries = deliveryMapper.selectList(
                 new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Delivery>()
                         .eq(Delivery::getOrderId, order.getId())
                         .orderByDesc(Delivery::getCreateTime));
         if (deliveries != null && !deliveries.isEmpty()) {
-            Delivery latest = deliveries.get(0);
-            vo.setDeliveryNo(latest.getDeliveryNo());
-            vo.setDeliveryDate(latest.getDeliveryDate());
+            latestDelivery = deliveries.get(0);
+            vo.setDeliveryNo(latestDelivery.getDeliveryNo());
+            vo.setDeliveryDate(latestDelivery.getDeliveryDate());
         }
+
+        // 订单进度时间线
+        vo.setProgressTimeline(buildProgressTimeline(order, latestDelivery));
 
         List<SaleOrderItem> items = saleOrderItemMapper.selectByOrderId(order.getId());
         List<PortalOrderVO.PortalOrderItemVO> itemVOs = new ArrayList<>();
@@ -426,6 +568,23 @@ public class PortalService {
     }
 
     // ==================== 个人中心 ====================
+
+    public Map<String, Object> getProfileStats(Long customerId) {
+        Map<String, Object> stats = new HashMap<>();
+        // 各状态订单数量
+        List<SaleOrder> orders = saleOrderMapper.selectList(
+                new LambdaQueryWrapper<SaleOrder>().eq(SaleOrder::getCustomerId, customerId));
+        long pendingPay = orders.stream().filter(o -> o.getStatus() == 1).count();
+        long paid = orders.stream().filter(o -> o.getStatus() == 2).count();
+        long inProduction = orders.stream().filter(o -> o.getStatus() == 3).count();
+        long shipped = orders.stream().filter(o -> o.getStatus() == 4 || o.getStatus() == 5).count();
+        stats.put("totalOrders", orders.size());
+        stats.put("pendingPay", pendingPay);
+        stats.put("paid", paid);
+        stats.put("inProduction", inProduction);
+        stats.put("shipped", shipped);
+        return stats;
+    }
 
     public CustomerVO getProfile(Long customerId) {
         PortalCustomer c = customerMapper.selectById(customerId);

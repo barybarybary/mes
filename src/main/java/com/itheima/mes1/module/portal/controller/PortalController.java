@@ -134,6 +134,12 @@ public class PortalController {
 
     // ==================== 个人中心 ====================
 
+    @Operation(summary = "个人统计")
+    @GetMapping("/profile/stats")
+    public Result<Map<String, Object>> profileStats(@RequestAttribute("portalCustomerId") Long customerId) {
+        return Result.ok(portalService.getProfileStats(customerId));
+    }
+
     @Operation(summary = "个人资料")
     @GetMapping("/profile")
     public Result<CustomerVO> getProfile(@RequestAttribute("portalCustomerId") Long customerId) {

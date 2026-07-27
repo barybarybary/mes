@@ -1,47 +1,93 @@
 <template>
-  <div class="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-sky-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 px-4">
-    <!-- 返回首页 -->
-    <router-link to="/portal/home" class="mb-6 text-sky-500 hover:text-sky-600 text-sm flex items-center gap-1">
-      ← 返回首页
-    </router-link>
-
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 w-full max-w-md">
-      <div class="text-center mb-6">
-        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center mx-auto mb-3 text-white text-lg font-extrabold">ZY</div>
-        <h2 class="text-xl font-bold text-slate-800 dark:text-slate-200">造易商城</h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">客户登录</p>
+  <div class="h-screen w-full flex bg-slate-50">
+    <!-- Left: Brand -->
+    <div class="hidden lg:flex lg:w-1/2 gradient-hero flex-col justify-center items-center text-white px-12 relative overflow-hidden">
+      <div class="absolute inset-0 opacity-10" style="background-image: linear-gradient(rgba(255,255,255,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.2) 1px, transparent 1px); background-size: 60px 60px;"></div>
+      <div class="relative z-10 text-center space-y-6">
+        <div class="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto">
+          <span class="text-white text-3xl font-extrabold">ZY</span>
+        </div>
+        <h1 class="text-4xl font-bold">造易 ZaoYi</h1>
+        <p class="text-xl text-sky-100">制造变容易</p>
+        <p class="text-sky-200/80 text-sm max-w-sm">高品质制造，一站式采购平台<br>为制造企业提供优质原材料与配件</p>
       </div>
+    </div>
 
-      <el-form :model="form" :rules="rules" @submit.prevent="handleLogin">
-        <el-form-item prop="username">
-          <el-input v-model="form.username" placeholder="用户名" size="large" />
-        </el-form-item>
-        <el-form-item prop="password">
-          <el-input v-model="form.password" type="password" placeholder="密码" show-password size="large" @keyup.enter="handleLogin" />
-        </el-form-item>
-        <el-button type="primary" size="large" class="w-full !rounded-lg" :loading="loading" @click="handleLogin">
-          登 录
-        </el-button>
-      </el-form>
+    <!-- Right: Login form -->
+    <div class="flex-1 flex items-center justify-center px-6">
+      <div class="w-full max-w-sm">
+        <div class="text-center mb-8 lg:hidden">
+          <div class="w-14 h-14 rounded-xl gradient-primary flex items-center justify-center mx-auto mb-2">
+            <span class="text-white text-xl font-extrabold">ZY</span>
+          </div>
+          <h2 class="text-xl font-bold text-slate-800">造易 ZaoYi</h2>
+          <p class="text-sm text-slate-500">制造变容易</p>
+        </div>
 
-      <div class="mt-4 text-center text-sm text-slate-500 dark:text-slate-400">
-        还没有账号？<router-link to="/portal/register" class="text-sky-500 hover:text-sky-600 font-medium">立即注册</router-link>
-      </div>
+        <div class="text-center mb-8">
+          <h3 class="text-2xl font-bold text-slate-800">客户登录</h3>
+          <p class="text-sm text-slate-500 mt-1">欢迎回来，请登录您的账号</p>
+        </div>
 
-      <!-- 测试账号 -->
-      <div class="mt-5 p-4 bg-sky-50 dark:bg-sky-900/30 border-2 border-dashed border-sky-300 dark:border-sky-700 rounded-xl">
-        <p class="mb-2.5 text-xs font-semibold text-sky-700 dark:text-sky-300 text-center">🔑 测试账号（点击直接填入）</p>
-        <div class="flex gap-2">
-          <button
-            v-for="acct in demoAccounts" :key="acct.user"
-            type="button"
-            @click="form.username = acct.user; form.password = acct.pwd"
-            class="flex-1 p-2.5 border border-sky-200 dark:border-sky-700 rounded-lg bg-white dark:bg-slate-700 cursor-pointer text-center hover:bg-sky-50 dark:hover:bg-slate-600 transition"
-          >
-            <div class="font-bold text-sky-800 dark:text-sky-200 text-sm">{{ acct.user }}</div>
-            <div class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">密码: {{ acct.pwd }}</div>
-            <div class="text-slate-400 dark:text-slate-500 text-[11px] mt-0.5">{{ acct.company }}</div>
-          </button>
+        <el-form :model="form" :rules="rules" ref="formRef" @keyup.enter="handleLogin">
+          <el-form-item prop="username">
+            <el-input
+              v-model="form.username"
+              placeholder="用户名"
+              size="large"
+              :prefix-icon="User"
+            />
+          </el-form-item>
+          <el-form-item prop="password">
+            <el-input
+              v-model="form.password"
+              type="password"
+              placeholder="密码"
+              size="large"
+              show-password
+              :prefix-icon="Lock"
+            />
+          </el-form-item>
+          <el-form-item>
+            <button
+              type="button"
+              class="w-full btn-primary h-11 text-base"
+              :disabled="loading"
+              @click="handleLogin"
+            >
+              <el-icon v-if="loading" class="animate-spin"><Loading /></el-icon>
+              <span>{{ loading ? '登录中...' : '登 录' }}</span>
+            </button>
+          </el-form-item>
+        </el-form>
+
+        <div class="text-center text-sm text-slate-500">
+          还没有账号？
+          <router-link to="/portal/register" class="text-sky-500 hover:text-sky-600 font-medium no-underline">立即注册 →</router-link>
+        </div>
+
+        <!-- 测试账号提示 -->
+        <div class="mt-6 p-4 rounded-xl bg-sky-50 border border-sky-100">
+          <div class="flex items-center gap-2 text-sm text-sky-600 mb-2">
+            <el-icon :size="16"><InfoFilled /></el-icon>
+            <span>测试账号</span>
+          </div>
+          <div class="space-y-2 text-sm">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-600">用户名：<code class="px-2 py-0.5 bg-white rounded text-sky-700">customer1</code></span>
+              <span class="text-slate-600">密码：<code class="px-2 py-0.5 bg-white rounded text-sky-700">123456</code></span>
+              <span class="text-xs text-slate-400">星辰科技</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-600">用户名：<code class="px-2 py-0.5 bg-white rounded text-sky-700">customer2</code></span>
+              <span class="text-slate-600">密码：<code class="px-2 py-0.5 bg-white rounded text-sky-700">123456</code></span>
+              <span class="text-xs text-slate-400">远航制造</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 text-center">
+          <router-link to="/portal" class="text-sm text-slate-400 hover:text-slate-600 no-underline">← 返回首页</router-link>
         </div>
       </div>
     </div>
@@ -49,40 +95,32 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import api from '@/api/portal'
 import { usePortalStore } from '@/stores/portal'
+import { ElMessage } from 'element-plus'
+import { User, Lock, Loading } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const portalStore = usePortalStore()
+const formRef = ref()
 const loading = ref(false)
+
 const form = reactive({ username: '', password: '' })
-
-const demoAccounts = [
-  { user: 'customer1', pwd: '123456', company: '星辰科技' },
-  { user: 'customer2', pwd: '123456', company: '远航制造' }
-]
-
 const rules = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
 }
 
 async function handleLogin() {
+  await formRef.value.validate()
   loading.value = true
   try {
-    const res = await api.post('/login', form)
-    if (res.code === 200 && res.data) {
-      const { token, customer } = res.data
-      portalStore.saveLogin(token, customer)
-      portalStore.fetchCartCount()
-      ElMessage.success('欢迎回来，' + (customer.contactName || customer.username) + '！')
-      router.push('/portal/home')
-    }
-  } catch (e) {
-    // 拦截器已提示
+    await portalStore.login(form.username, form.password)
+    ElMessage.success('登录成功，欢迎回来！')
+    router.push('/portal')
+  } catch { /* ignore */
+    // Error already shown by axios interceptor
   } finally {
     loading.value = false
   }

@@ -18,6 +18,7 @@ public class Product {
     private String unit;
     private BigDecimal price;
     private BigDecimal costPrice;
+    private Long supplierId;
     private String imageUrl;
     private String remark;
     private Integer status;

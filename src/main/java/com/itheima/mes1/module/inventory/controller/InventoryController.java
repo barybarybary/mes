@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.Map;
 
 @Tag(name = "库存管理")
@@ -27,11 +26,12 @@ public class InventoryController {
     @RequirePermission("inventory:list")
     @Operation(summary = "库存查询")
     @GetMapping
-    public Result<List<Inventory>> list(@RequestParam(required = false) Long productId) {
-        if (productId != null) {
-            return Result.ok(inventoryService.listByProduct(productId));
-        }
-        return Result.ok(inventoryService.listAll());
+    public Result<PageResult<Inventory>> list(
+            @RequestParam(required = false) Long productId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int pageSize) {
+        Page<Inventory> result = inventoryService.pageStocks(page, pageSize, productId);
+        return Result.ok(new PageResult<>(result.getRecords(), result.getTotal(), page, pageSize));
     }
 
     @RequirePermission("inventory:transaction:list")
@@ -57,6 +57,21 @@ public class InventoryController {
                 new BigDecimal(body.get("quantity").toString()),
                 (String) body.getOrDefault("type", "in"),
                 (String) body.get("orderNo"),
+                (String) body.get("remark")
+        );
+        return Result.ok();
+    }
+
+    @RequirePermission("inventory:adjust")
+    @Operation(summary = "调拨（仓库间转移）")
+    @PostMapping("/transfer")
+    public Result<?> transfer(@RequestBody Map<String, Object> body) {
+        inventoryService.transfer(
+                Long.valueOf(body.get("productId").toString()),
+                Long.valueOf(body.get("fromWarehouseId").toString()),
+                Long.valueOf(body.get("toWarehouseId").toString()),
+                (String) body.get("batchNo"),
+                new BigDecimal(body.get("quantity").toString()),
                 (String) body.get("remark")
         );
         return Result.ok();

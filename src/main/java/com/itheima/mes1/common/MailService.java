@@ -109,6 +109,58 @@ public class MailService {
         }
     }
 
+    /** 发送密码重置验证码 */
+    public void sendPasswordResetCode(String to, String code) {
+        if (!isConfigured()) {
+            log.warn("邮件未配置，跳过发送 to={}", to);
+            return;
+        }
+        try {
+            MimeMessage msg = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(msg, true, "UTF-8");
+            helper.setFrom(from);
+            helper.setTo(to);
+            helper.setSubject("【造易MES】密码重置验证码");
+
+            String html = """
+                    <div style="max-width:520px;margin:0 auto;font-family:'PingFang SC','Microsoft YaHei','Helvetica Neue',Arial,sans-serif;background:#ffffff;">
+                      <div style="background:linear-gradient(135deg, #f59e0b 0%%, #d97706 100%%);padding:30px 28px;border-radius:10px 10px 0 0;text-align:center;">
+                        <h1 style="color:#fff;font-size:22px;font-weight:700;margin:0;letter-spacing:2px;">&#x1F512; 重置密码</h1>
+                        <p style="color:rgba(255,255,255,0.9);font-size:13px;margin:8px 0 0;">造易 MES 系统 · 密码找回</p>
+                      </div>
+                      <div style="border:1px solid #e8eaed;border-top:none;padding:32px 28px;border-radius:0 0 10px 10px;">
+                        <p style="font-size:15px;color:#333;margin:0 0 6px;">您好，</p>
+                        <p style="font-size:14px;color:#5f6368;margin:0 0 24px;line-height:1.8;">
+                          您正在申请重置 <strong>造易 MES 系统</strong> 的登录密码，请使用以下验证码完成身份验证：
+                        </p>
+                        <div style="background:linear-gradient(135deg, #fffbeb 0%%, #fef3c7 100%%);text-align:center;padding:20px 16px;border-radius:8px;border:1px dashed #f59e0b;margin:0 0 24px;">
+                          <span style="font-size:36px;font-weight:800;color:#d97706;letter-spacing:8px;font-family:'Courier New',monospace;">%s</span>
+                        </div>
+                        <div style="background:#fef2f2;border-left:4px solid #ef4444;padding:12px 16px;border-radius:4px;margin-bottom:16px;">
+                          <p style="font-size:13px;color:#dc2626;margin:0;line-height:1.6;">
+                            &#x26A0; 验证码 <strong>5 分钟内</strong>有效，如非本人操作请忽略此邮件。
+                          </p>
+                        </div>
+                        <p style="font-size:12px;color:#9aa0a6;margin:0 0 24px;line-height:1.6;">
+                          如果您没有申请重置密码，说明您的邮箱可能被他人误用，您的账户是安全的。
+                        </p>
+                      </div>
+                      <div style="padding:20px 28px;text-align:center;">
+                        <p style="font-size:12px;color:#bdc1c6;margin:0 0 4px;">此邮件由系统自动发送，请勿回复。</p>
+                        <p style="font-size:12px;color:#bdc1c6;margin:0;">&#x1F4E9; %s &#x00B7; 造易 MES 团队</p>
+                      </div>
+                    </div>
+                    """.formatted(code, to);
+
+            helper.setText(html, true);
+            mailSender.send(msg);
+            log.info("密码重置验证码已发送至 {}", to);
+        } catch (MessagingException e) {
+            log.error("邮件发送失败: {}", e.getMessage());
+            throw new RuntimeException("邮件发送失败: " + e.getMessage());
+        }
+    }
+
     /** 发送通用 HTML 邮件 */
     public void sendHtml(String to, String subject, String html) {
         if (!isConfigured()) {

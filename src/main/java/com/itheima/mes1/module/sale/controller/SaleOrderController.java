@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.itheima.mes1.common.PageResult;
 import com.itheima.mes1.common.Result;
 import com.itheima.mes1.common.annotation.RequirePermission;
+import com.itheima.mes1.module.production.entity.WorkOrder;
+import com.itheima.mes1.module.production.service.WorkOrderService;
 import com.itheima.mes1.module.sale.dto.SaleOrderCreateReq;
 import com.itheima.mes1.module.sale.dto.SaleOrderUpdateReq;
 import com.itheima.mes1.module.sale.service.SaleOrderService;
@@ -13,6 +15,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Tag(name = "销售订单")
 @RestController
 @RequestMapping("/api/sale/order")
@@ -20,6 +24,8 @@ public class SaleOrderController {
 
     @Autowired
     private SaleOrderService orderService;
+    @Autowired
+    private WorkOrderService workOrderService;
 
     @RequirePermission("sale:order:list")
     @GetMapping
@@ -57,6 +63,13 @@ public class SaleOrderController {
     public Result<?> updateStatus(@PathVariable Long id, @RequestParam Integer status) {
         orderService.updateStatus(id, status);
         return Result.ok();
+    }
+
+    @RequirePermission("sale:order:audit")
+    @Operation(summary = "转为生产工单")
+    @PutMapping("/{id}/to-production")
+    public Result<List<WorkOrder>> convertToProduction(@PathVariable Long id) {
+        return Result.ok(workOrderService.createFromSaleOrder(id));
     }
 
     @RequirePermission("sale:order:delete")

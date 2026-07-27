@@ -28,4 +28,7 @@ public class QcRecord {
     private String disposition;
     private String remark;
     private LocalDateTime createTime;
+
+    @com.baomidou.mybatisplus.annotation.TableField(exist = false)
+    private String processName;
 }

@@ -1,241 +1,207 @@
 <template>
-  <div>
-    <!-- 库存查询 -->
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden mb-6">
-      <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div class="px-6 py-5 border-b border-slate-100">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-200">库存管理</h2>
-          <p class="text-xs text-slate-400 dark:text-slate-300 mt-1">当前库存查询，支持入库/出库操作</p>
-        </div>
-        <el-button type="primary" @click="openInDialog" class="h-10 px-5 rounded-xl font-medium">
-          <el-icon class="mr-1"><Plus /></el-icon>产品入库
-        </el-button>
-      </div>
-      <div class="p-6">
-        <el-table :data="list" border stripe class="page-table">
-          <el-table-column prop="productCode" label="产品编码" width="120" />
-          <el-table-column prop="productName" label="产品名称" min-width="160">
-            <template #default="{ row }"><span class="font-medium text-slate-700 dark:text-slate-600">{{ row.productName }}</span></template>
-          </el-table-column>
-          <el-table-column prop="warehouseName" label="仓库" width="120">
-            <template #default="{ row }"><el-tag type="info" effect="light" size="small">{{ row.warehouseName }}</el-tag></template>
-          </el-table-column>
-          <el-table-column prop="locationName" label="库位" width="100" />
-          <el-table-column prop="batchNo" label="批次号" width="130">
-            <template #default="{ row }">{{ row.batchNo || '-' }}</template>
-          </el-table-column>
-          <el-table-column prop="quantity" label="库存数量" width="130" align="center">
-            <template #default="{ row }">
-              <span :class="row.quantity > 10 ? 'text-green-600 font-bold' : 'text-red-500 font-bold'">
-                {{ row.quantity }} {{ row.unit || '' }}
-              </span>
-            </template>
-          </el-table-column>
-          <el-table-column prop="lockedQty" label="锁定数量" width="100" align="center" />
-          <el-table-column label="操作" width="120" align="center" fixed="right">
-            <template #default="{ row }">
-              <button class="action-link danger" @click="openOutDialog(row)">出库</button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </div>
-    </div>
-
-    <!-- 库存流水 -->
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
-      <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-700">
-        <h3 class="text-base font-semibold text-slate-800 dark:text-slate-200">库存流水</h3>
-      </div>
-      <div class="p-6">
-        <el-table :data="transactions" border stripe class="page-table">
-          <el-table-column label="类型" width="90" align="center">
-            <template #default="{ row }">
-              <el-tag v-if="row.type === 'in' || row.quantity > 0" type="success" effect="light" size="small">入库</el-tag>
-              <el-tag v-else type="danger" effect="light" size="small">出库</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="productId" label="产品ID" width="100" />
-          <el-table-column label="数量" width="120" align="center">
-            <template #default="{ row }">{{ Math.abs(row.quantity) }}</template>
-          </el-table-column>
-          <el-table-column label="库存变化" width="200" align="center">
-            <template #default="{ row }">{{ row.beforeQty }} → {{ row.afterQty }}</template>
-          </el-table-column>
-          <el-table-column prop="batchNo" label="批次号" width="130" />
-          <el-table-column prop="orderNo" label="关联单号" width="180" />
-          <el-table-column prop="remark" label="备注" min-width="150" show-overflow-tooltip />
-          <el-table-column prop="createTime" label="操作时间" width="170" />
-        </el-table>
-        <div class="flex justify-center mt-4">
-          <el-pagination v-if="txTotal > 10" background layout="prev, pager, next" :total="txTotal" :page-size="10" v-model:current-page="txPage" @current-change="fetchTransactions" />
+          <h2 class="text-lg font-semibold text-slate-800">库存管理</h2>
+          <p class="text-xs text-slate-400 mt-1">库存查询、出入库操作</p>
         </div>
       </div>
     </div>
 
-    <!-- 入库弹窗 -->
-    <el-dialog v-model="inVisible" title="产品入库" width="480px" class="custom-dialog">
-      <el-form :model="inForm" label-width="80px" label-position="right">
-        <el-form-item label="产品">
-          <el-select v-model="inForm.productId" filterable placeholder="请选择产品" class="w-full">
-            <el-option v-for="p in products" :key="p.id" :label="`[${p.code}] ${p.name}`" :value="p.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="仓库">
-          <el-select v-model="inForm.warehouseId" placeholder="请选择仓库" class="w-full">
-            <el-option v-for="w in warehouses" :key="w.id" :label="w.name" :value="w.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="数量"><el-input-number v-model="inForm.quantity" :min="1" :precision="0" class="w-full" /></el-form-item>
-        <el-form-item label="批次号"><el-input v-model="inForm.batchNo" placeholder="选填" /></el-form-item>
-        <el-form-item label="备注"><el-input v-model="inForm.remark" placeholder="选填" /></el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="inVisible = false">取消</el-button>
-        <el-button type="primary" :loading="inLoading" @click="doStockIn">确认入库</el-button>
-      </template>
-    </el-dialog>
+    <div class="p-6">
+      <el-tabs v-model="activeTab" class="custom-tabs" @tab-change="onTabChange">
+        <el-tab-pane label="库存查询" name="stock">
+          <div class="mb-4">
+            <el-select v-model="filterProductId" placeholder="筛选产品" filterable clearable class="w-64" @change="onFilterChange">
+              <el-option v-for="p in products" :key="p.id" :value="p.id" :label="p.name" />
+            </el-select>
+          </div>
+          <el-table :data="stocks" border stripe class="page-table">
+            <el-table-column prop="productName" label="产品名称" min-width="180">
+              <template #default="{ row }"><span class="font-medium text-slate-700">{{ row.productName }}</span></template>
+            </el-table-column>
+            <el-table-column prop="batchNo" label="批次号" width="150">
+              <template #default="{ row }"><el-tag type="info" effect="light" size="small">{{ row.batchNo }}</el-tag></template>
+            </el-table-column>
+            <el-table-column prop="warehouseName" label="仓库" width="140" />
+            <el-table-column prop="quantity" label="库存数量" width="130" align="right">
+              <template #default="{ row }">
+                <span class="font-semibold" :class="row.quantity > 0 ? 'text-emerald-600' : 'text-red-500'">{{ row.quantity }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="unit" label="单位" width="80" align="center" />
+            <el-table-column prop="updateTime" label="更新时间" width="170" />
+          </el-table>
+          <div class="mt-5 flex justify-end">
+            <el-pagination
+              v-model:current-page="stockPage"
+              :total="stockTotal"
+              :page-size="stockPageSize"
+              layout="prev, pager, next, total"
+              background
+              @current-change="fetchStock"
+            />
+          </div>
+        </el-tab-pane>
 
-    <!-- 出库弹窗 -->
-    <el-dialog v-model="outVisible" title="产品出库" width="480px" class="custom-dialog">
-      <el-form :model="outForm" label-width="80px" label-position="right">
-        <el-form-item label="产品"><el-input :model-value="`${outProduct.productCode} ${outProduct.productName}`" disabled /></el-form-item>
-        <el-form-item label="仓库">
-          <el-select v-model="outForm.warehouseId" placeholder="请选择仓库" class="w-full">
-            <el-option v-for="w in warehouses" :key="w.id" :label="w.name" :value="w.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="出库数量"><el-input-number v-model="outForm.quantity" :min="1" :max="outProduct.quantity" :precision="0" class="w-full" /></el-form-item>
-        <el-form-item label="批次号"><el-input v-model="outForm.batchNo" placeholder="选填，留空自动先进先出" /></el-form-item>
-        <el-form-item label="备注"><el-input v-model="outForm.remark" placeholder="选填" /></el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="outVisible = false">取消</el-button>
-        <el-button type="danger" :loading="outLoading" @click="doStockOut">确认出库</el-button>
-      </template>
-    </el-dialog>
+        <el-tab-pane label="入库操作" name="in">
+          <div class="max-w-lg mx-auto py-6">
+            <div class="text-center mb-6">
+              <div class="w-16 h-16 mx-auto rounded-2xl bg-emerald-50 flex items-center justify-center mb-3">
+                <el-icon color="#10b981" :size="32"><Bottom /></el-icon>
+              </div>
+              <h3 class="text-lg font-semibold text-slate-800">商品入库</h3>
+              <p class="text-sm text-slate-400 mt-1">将商品入库到指定仓库</p>
+            </div>
+            <el-form :model="inForm" label-width="80px" label-position="right">
+              <el-form-item label="产品">
+                <el-select v-model="inForm.productId" filterable class="w-full" placeholder="请选择产品">
+                  <el-option v-for="p in products" :key="p.id" :value="p.id" :label="p.name" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="仓库">
+                <el-select v-model="inForm.warehouseId" class="w-full" placeholder="请选择仓库">
+                  <el-option v-for="w in warehouses" :key="w.id" :value="w.id" :label="w.name" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="批次号">
+                <el-input v-model="inForm.batchNo" placeholder="请输入批次号" />
+              </el-form-item>
+              <el-form-item label="入库数量">
+                <el-input-number v-model="inForm.quantity" :min="0" :precision="2" class="w-full" />
+              </el-form-item>
+              <el-form-item label="备注">
+                <el-input v-model="inForm.remark" placeholder="请输入备注" />
+              </el-form-item>
+              <el-form-item>
+                <el-button type="primary" class="w-full h-11 rounded-xl font-medium" @click="doStockIn">
+                  <el-icon class="mr-1"><Bottom /></el-icon>确认入库
+                </el-button>
+              </el-form-item>
+            </el-form>
+          </div>
+        </el-tab-pane>
+
+        <el-tab-pane label="出库操作" name="out">
+          <div class="max-w-lg mx-auto py-6">
+            <div class="text-center mb-6">
+              <div class="w-16 h-16 mx-auto rounded-2xl bg-orange-50 flex items-center justify-center mb-3">
+                <el-icon color="#f97316" :size="32"><Top /></el-icon>
+              </div>
+              <h3 class="text-lg font-semibold text-slate-800">商品出库</h3>
+              <p class="text-sm text-slate-400 mt-1">从指定仓库出库商品</p>
+            </div>
+            <el-form :model="outForm" label-width="80px" label-position="right">
+              <el-form-item label="产品">
+                <el-select v-model="outForm.productId" filterable class="w-full" placeholder="请选择产品">
+                  <el-option v-for="p in products" :key="p.id" :value="p.id" :label="p.name" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="仓库">
+                <el-select v-model="outForm.warehouseId" class="w-full" placeholder="请选择仓库">
+                  <el-option v-for="w in warehouses" :key="w.id" :value="w.id" :label="w.name" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="批次号">
+                <el-input v-model="outForm.batchNo" placeholder="请输入批次号" />
+              </el-form-item>
+              <el-form-item label="出库数量">
+                <el-input-number v-model="outForm.quantity" :min="0" :precision="2" class="w-full" />
+              </el-form-item>
+              <el-form-item label="备注">
+                <el-input v-model="outForm.remark" placeholder="请输入备注" />
+              </el-form-item>
+              <el-form-item>
+                <el-button type="danger" class="w-full h-11 rounded-xl font-medium" @click="doStockOut">
+                  <el-icon class="mr-1"><Top /></el-icon>确认出库
+                </el-button>
+              </el-form-item>
+            </el-form>
+          </div>
+        </el-tab-pane>
+
+      </el-tabs>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
 import api from '@/api'
 
-const list = ref([])
-const transactions = ref([])
-const txTotal = ref(0)
-const txPage = ref(1)
-const products = ref([])
-const warehouses = ref([])
+const activeTab = ref('stock'), stocks = ref([]), filterProductId = ref()
+const products = ref([]), warehouses = ref([])
+const stockPage = ref(1), stockTotal = ref(0), stockPageSize = ref(8), stockLoading = ref(false)
+const inForm = reactive({ productId: null, warehouseId: null, batchNo: '', quantity: 0, remark: '' })
+const outForm = reactive({ productId: null, warehouseId: null, batchNo: '', quantity: 0, remark: '' })
 
-// ======= 入库 =======
-const inVisible = ref(false)
-const inLoading = ref(false)
-const inForm = reactive({ productId: null, warehouseId: null, quantity: 1, batchNo: '', remark: '' })
-
-// ======= 出库 =======
-const outVisible = ref(false)
-const outLoading = ref(false)
-const outProduct = ref({})
-const outForm = reactive({ productId: null, warehouseId: null, quantity: 1, batchNo: '', remark: '' })
-
-onMounted(() => { fetchList(); fetchTransactions(); fetchProducts(); fetchWarehouses() })
-
-async function fetchList() {
+async function fetchStock() {
+  stockLoading.value = true
   try {
-    const res = await api.get('/inventory')
-    list.value = res.data || []
-  } catch { /* ignore */ }
+    const r = await api.get('/inventory', {
+      params: {
+        page: stockPage.value,
+        pageSize: stockPageSize.value,
+        productId: filterProductId.value || undefined
+      }
+    })
+    if (r.code === 200) {
+      const data = r.data
+      if (Array.isArray(data)) {
+        stocks.value = data
+        stockTotal.value = data.length
+      } else {
+        stocks.value = data.list || data.records || []
+        stockTotal.value = data.total || 0
+      }
+    }
+  } catch (e) {
+    console.error('加载库存失败', e)
+  } finally {
+    stockLoading.value = false
+  }
 }
-
-async function fetchTransactions() {
-  try {
-    const res = await api.get('/inventory/transactions', { params: { page: txPage.value, pageSize: 10 } })
-    transactions.value = res.data?.list || []
-    txTotal.value = res.data?.total || 0
-  } catch { /* ignore */ }
-}
-
-async function fetchProducts() {
-  try {
-    const res = await api.get('/base/product', { params: { page: 1, pageSize: 999 } })
-    products.value = res.data?.list || []
-  } catch { /* ignore */ }
-}
-
-async function fetchWarehouses() {
-  try {
-    const res = await api.get('/base/warehouse')
-    warehouses.value = Array.isArray(res.data) ? res.data : (res.data?.list || [])
-  } catch { /* ignore */ }
-}
-
-function openInDialog() {
-  inForm.productId = null
-  inForm.warehouseId = warehouses.value[0]?.id || null
-  inForm.quantity = 1
-  inForm.batchNo = ''
-  inForm.remark = ''
-  inVisible.value = true
-}
-
 async function doStockIn() {
   if (!inForm.productId || !inForm.warehouseId || !inForm.quantity) {
     ElMessage.warning('请填写完整信息')
     return
   }
-  inLoading.value = true
-  try {
-    const product = products.value.find(p => p.id === inForm.productId)
-    const warehouse = warehouses.value.find(w => w.id === inForm.warehouseId)
-    await api.post('/inventory/in', {
-      productId: inForm.productId,
-      warehouseId: inForm.warehouseId,
-      quantity: inForm.quantity,
-      batchNo: inForm.batchNo || null,
-      type: '采购入库',
-      orderNo: null,
-      remark: inForm.remark || null
-    })
-    ElMessage.success(`「${product?.name}」入库 ${inForm.quantity} 件到「${warehouse?.name}」`)
-    inVisible.value = false
-    fetchList()
-    fetchTransactions()
-  } catch { /* ignore */ }
-  finally { inLoading.value = false }
+  await api.post('/inventory/in', inForm)
+  ElMessage.success('入库成功')
+  Object.assign(inForm, { productId: null, warehouseId: null, batchNo: '', quantity: 0, remark: '' })
+  stockPage.value = 1; fetchStock()
 }
-
-function openOutDialog(row) {
-  outProduct.value = row
-  outForm.warehouseId = row.warehouseId || warehouses.value[0]?.id || null
-  outForm.quantity = 1
-  outForm.batchNo = ''
-  outForm.remark = ''
-  outVisible.value = true
-}
-
 async function doStockOut() {
-  if (!outForm.warehouseId || !outForm.quantity) {
+  if (!outForm.productId || !outForm.warehouseId || !outForm.quantity) {
     ElMessage.warning('请填写完整信息')
     return
   }
-  outLoading.value = true
-  try {
-    await api.post('/inventory/out', {
-      productId: outProduct.value.productId,
-      warehouseId: outForm.warehouseId,
-      quantity: outForm.quantity,
-      batchNo: outForm.batchNo || null,
-      type: '其它出库',
-      orderNo: null,
-      remark: outForm.remark || null
-    })
-    ElMessage.success(`「${outProduct.value.productName}」出库 ${outForm.quantity} 件`)
-    outVisible.value = false
-    fetchList()
-    fetchTransactions()
-  } catch { /* ignore */ }
-  finally { outLoading.value = false }
+  await api.post('/inventory/out', outForm)
+  ElMessage.success('出库成功')
+  Object.assign(outForm, { productId: null, warehouseId: null, batchNo: '', quantity: 0, remark: '' })
+  stockPage.value = 1; fetchStock()
 }
+
+function onFilterChange() {
+  stockPage.value = 1
+  fetchStock()
+}
+
+function onTabChange(name) {
+  if (name === 'stock') fetchStock()
+}
+
+onMounted(async () => {
+  products.value = (await api.get('/base/product', { params: { pageSize: 999 } })).data?.list || []
+  warehouses.value = (await api.get('/base/warehouse')).data || []
+  fetchStock()
+})
 </script>
+
+<style scoped>
+:deep(.page-table th.el-table__cell) { background-color: #f8fafc !important; color: #475569 !important; font-weight: 600 !important; font-size: 13px !important; }
+:deep(.custom-tabs .el-tabs__item) { font-weight: 500; height: 44px; }
+:deep(.custom-tabs .el-tabs__active-bar) { height: 3px; }
+</style>

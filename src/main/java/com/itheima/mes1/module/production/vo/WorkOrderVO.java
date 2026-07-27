@@ -19,6 +19,8 @@ public class WorkOrderVO {
     private BigDecimal scrapQty;
     private String sourceType;
     private String sourceNo;
+    private Long sourceId;
+    private Long sourceItemId;
     private Integer status;
     private LocalDate planStart;
     private LocalDate planEnd;

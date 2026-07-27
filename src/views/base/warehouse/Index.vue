@@ -1,9 +1,9 @@
 <template>
-  <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
-    <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div class="px-6 py-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-200">仓库管理</h2>
-        <p class="text-xs text-slate-400 dark:text-slate-300 mt-1">管理仓库和库位信息</p>
+        <h2 class="text-lg font-semibold text-slate-800">仓库管理</h2>
+        <p class="text-xs text-slate-400 mt-1">管理仓库和库位信息</p>
       </div>
       <el-button type="primary" @click="openDialog()" class="h-10 px-5 rounded-xl font-medium">
         <el-icon class="mr-1"><Plus /></el-icon>新增仓库
@@ -16,7 +16,7 @@
           <template #default="{ row }"><el-tag type="info" effect="light" size="small">{{ row.code }}</el-tag></template>
         </el-table-column>
         <el-table-column prop="name" label="仓库名称" min-width="160">
-          <template #default="{ row }"><span class="font-medium text-slate-700 dark:text-slate-600">{{ row.name }}</span></template>
+          <template #default="{ row }"><span class="font-medium text-slate-700">{{ row.name }}</span></template>
         </el-table-column>
         <el-table-column prop="type" label="仓库类型" width="130" align="center">
           <template #default="{ row }">
@@ -30,9 +30,9 @@
         <el-table-column label="操作" width="180" align="center" fixed="right">
           <template #default="{ row }">
             <div class="flex items-center justify-center gap-3">
-              <button class="action-link primary" @click="openDialog(row)">编辑</button>
-              <button class="action-link success" @click="openLocDialog(row)">库位</button>
-              <button class="action-link danger" @click="del(row.id)">删除</button>
+              <el-button type="primary" @click="openDialog(row)">编辑</el-button>
+              <el-button type="success" @click="openLocDialog(row)">库位</el-button>
+              <el-button type="danger" @click="del(row.id)">删除</el-button>
             </div>
           </template>
         </el-table-column>
@@ -63,25 +63,33 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="locVisible" title="库位管理" width="480px" class="custom-dialog">
-      <p class="text-sm text-slate-500 dark:text-slate-300 mb-4">管理该仓库下的库位信息。</p>
-      <div class="max-h-80 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-xl">
-        <div v-for="l in locations" :key="l.id" class="flex justify-between items-center px-4 py-3 border-b border-slate-100 dark:border-slate-700 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors">
+    <el-dialog v-model="locVisible" title="库位管理" width="520px" class="custom-dialog">
+      <p class="text-sm text-slate-500 mb-4">管理该仓库下的库位信息。</p>
+      <div class="max-h-80 overflow-y-auto border border-slate-200 rounded-xl">
+        <div v-for="l in locations" :key="l.id" class="flex justify-between items-center px-4 py-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
           <div class="flex items-center gap-3">
             <div class="w-8 h-8 rounded-lg bg-sky-50 flex items-center justify-center">
               <el-icon color="#0ea5e9" :size="16"><Location /></el-icon>
             </div>
             <div>
-              <span class="font-medium text-slate-700 dark:text-slate-600 text-sm">{{ l.code }}</span>
-              <span v-if="l.name" class="text-slate-400 dark:text-slate-300 text-sm ml-2">{{ l.name }}</span>
+              <span class="font-medium text-slate-700 text-sm">{{ l.code }}</span>
+              <span v-if="l.name" class="text-slate-400 text-sm ml-2">{{ l.name }}</span>
             </div>
           </div>
+          <div class="flex gap-2">
+            <el-button link type="primary" size="small" @click="editLocation(l)">编辑</el-button>
+            <el-button link type="danger" size="small" @click="delLocation(l.id)">删除</el-button>
+          </div>
         </div>
-        <div v-if="locations.length === 0" class="text-center py-10 text-slate-400 dark:text-slate-300 text-sm">暂无库位</div>
+        <div v-if="locations.length === 0" class="text-center py-10 text-slate-400 text-sm">暂无库位</div>
       </div>
       <div class="flex gap-2 mt-4">
-        <el-input v-model="locCode" placeholder="输入库位编码" size="default" class="flex-1" />
-        <el-button type="primary" @click="addLocation">添加库位</el-button>
+        <el-input v-model="locCode" placeholder="库位编码" size="default" class="flex-1" />
+        <el-input v-model="locName" placeholder="名称(可选)" size="default" style="width:120px" />
+        <el-button type="primary" @click="locEditingId ? saveEditLocation() : addLocation()">
+          {{ locEditingId ? '更新' : '添加' }}
+        </el-button>
+        <el-button v-if="locEditingId" @click="cancelEditLocation">取消</el-button>
       </div>
       <template #footer>
         <el-button @click="locVisible = false" class="rounded-xl px-5">关闭</el-button>
@@ -96,7 +104,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import api from '@/api'
 
 const list = ref([]), visible = ref(false), editing = ref({}), form = reactive({})
-const locVisible = ref(false), locWarehouseId = ref(), locations = ref([]), locCode = ref('')
+const locVisible = ref(false), locWarehouseId = ref(), locations = ref([]), locCode = ref(''), locName = ref(''), locEditingId = ref(null)
 
 async function fetch() {
   try {
@@ -134,19 +142,14 @@ async function del(id) {
 
 async function openLocDialog(row) {
   locWarehouseId.value = row.id
-  try {
-    const r = await api.get(`/base/warehouse/${row.id}/locations`)
-    const data = r.data || r
-    locations.value = Array.isArray(data) ? data : (data?.list || data?.records || [])
-  } catch { locations.value = [] }
+  locEditingId.value = null
+  locCode.value = ''
+  locName.value = ''
+  await loadLocations()
   locVisible.value = true
 }
 
-async function addLocation() {
-  if (!locCode.value) return
-  await api.post(`/base/warehouse/${locWarehouseId.value}/locations`, { code: locCode.value })
-  ElMessage.success('库位已添加')
-  locCode.value = ''
+async function loadLocations() {
   try {
     const r = await api.get(`/base/warehouse/${locWarehouseId.value}/locations`)
     const data = r.data || r
@@ -154,27 +157,46 @@ async function addLocation() {
   } catch { locations.value = [] }
 }
 
+function editLocation(l) {
+  locEditingId.value = l.id
+  locCode.value = l.code || ''
+  locName.value = l.name || ''
+}
+
+function cancelEditLocation() {
+  locEditingId.value = null
+  locCode.value = ''
+  locName.value = ''
+}
+
+async function saveEditLocation() {
+  if (!locCode.value) return
+  await api.put(`/base/warehouse/locations/${locEditingId.value}`, { code: locCode.value, name: locName.value || null })
+  ElMessage.success('库位已更新')
+  cancelEditLocation()
+  await loadLocations()
+}
+
+async function addLocation() {
+  if (!locCode.value) return
+  await api.post(`/base/warehouse/${locWarehouseId.value}/locations`, { code: locCode.value, name: locName.value || null })
+  ElMessage.success('库位已添加')
+  locCode.value = ''
+  locName.value = ''
+  await loadLocations()
+}
+
+async function delLocation(id) {
+  await ElMessageBox.confirm('确定删除该库位吗？', '提示', { type: 'warning', confirmButtonText: '确定', cancelButtonText: '取消' })
+  await api.delete(`/base/warehouse/locations/${id}`)
+  ElMessage.success('已删除')
+  await loadLocations()
+}
+
 onMounted(fetch)
 </script>
 
 <style scoped>
-.action-link {
-  background: none;
-  border: none;
-  padding: 0;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: color 0.15s;
-  outline: none;
-}
-.action-link.primary { color: #3b82f6; }
-.action-link.primary:hover { color: #1d4ed8; }
-.action-link.success { color: #10b981; }
-.action-link.success:hover { color: #047857; }
-.action-link.danger { color: #f43f5e; }
-.action-link.danger:hover { color: #be123c; }
-
 :deep(.page-table th.el-table__cell) { background-color: #f8fafc !important; color: #475569 !important; font-weight: 600 !important; font-size: 13px !important; }
 :deep(.custom-dialog .el-dialog) { border-radius: 16px !important; }
 :deep(.custom-dialog .el-dialog__header) { padding: 20px 24px 16px !important; margin-right: 0 !important; border-bottom: 1px solid #f1f5f9; }

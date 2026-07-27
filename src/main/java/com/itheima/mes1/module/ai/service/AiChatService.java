@@ -7,20 +7,16 @@ import com.itheima.mes1.module.ai.mapper.AiConversationMapper;
 import com.itheima.mes1.module.ai.mapper.AiMessageMapper;
 import com.itheima.mes1.module.knowledge.entity.KbChunk;
 import com.itheima.mes1.module.knowledge.mapper.KbChunkMapper;
-import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.agent.tool.ToolSpecifications;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
-import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.openai.OpenAiChatModel;
-import dev.langchain4j.model.output.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -41,7 +37,7 @@ public class AiChatService {
     private String baseUrl;
 
     private volatile OpenAiChatModel chatModel;
-    private volatile List<ToolSpecification> toolSpecifications;
+    private volatile AiToolExecutor toolExecutor;
     private volatile boolean initAttempted;
 
     /** 懒加载 AI 模型，避免启动时因缺少 API Key 而崩溃 */
@@ -57,7 +53,8 @@ public class AiChatService {
                 .baseUrl(baseUrl)
                 .temperature(0.7)
                 .build();
-        toolSpecifications = ToolSpecifications.toolSpecificationsFrom(toolService);
+        List<ToolSpecification> specs = ToolSpecifications.toolSpecificationsFrom(toolService);
+        toolExecutor = new AiToolExecutor(toolService, chatModel, specs);
     }
 
     public List<AiConversation> listConversations(Long userId) {
@@ -106,7 +103,7 @@ public class AiChatService {
 
                 重要规则:
                 1. 当用户询问订单、库存、工单、产品、客户、系统概况等具体数据时，必须使用工具(Tool)查询，不要凭猜测回答
-                2. 用友好专业的中文回答，将查询结果整理成易读的格式
+                2. 回答必须简洁：用2-5句话概括核心数据即可，禁止使用 Markdown 表格、禁止使用大标题、禁止长篇分段报告
                 3. 用户问"有哪些订单"或搜索订单时，调用 searchOrders 或 listSaleOrders
                 4. 用户问具体订单号时，调用 getSaleOrder 查详情
                 5. 用户问库存/有没有货时，调用 queryInventory
@@ -115,9 +112,7 @@ public class AiChatService {
                 8. 用户问客户时，调用 listCustomers
                 9. 用户问系统概况/今天怎么样时，调用 getDashboardSummary
                 10. 用户要求"监督"、"巡检"、"系统健康检查"时，调用 systemHealthCheck 进行全面诊断
-                11. 用户要求生成报表、导出数据、制作统计报告时，调用 generateReport 工具。reportType: sales(销售报表)/production(生产报表)/inventory(库存报表)/summary(综合报表); timeRange: 本周/本月/上月/近7天/近30天
-                12. 用户询问历史报表或"我的报表"时，调用 getMyReports 工具
-                13. 不要把工具名告诉用户，直接用自然语言回答""";
+                11. 不要把工具名告诉用户，直接用自然语言回答""";
 
         if (!context.isEmpty()) {
             systemPrompt += "\n\n以下参考资料仅用于回答知识性问题（数据查询优先用工具）:\n" + context;
@@ -149,7 +144,7 @@ public class AiChatService {
             answer = "AI 服务未配置，请设置 DEEPSEEK_API_KEY 环境变量后重启。";
         } else {
             try {
-                answer = callWithTools(chatMessages, sourcesList);
+                answer = toolExecutor.callWithTools(chatMessages);
             } catch (Exception e) {
                 answer = "AI 服务暂时不可用: " + e.getMessage();
             }
@@ -174,66 +169,6 @@ public class AiChatService {
         conversationMapper.updateById(conv);
 
         return aiMsg;
-    }
-
-    /** 带 Tool Calling 的对话循环 */
-    private String callWithTools(List<ChatMessage> messages, List<String> sources) {
-        int maxRounds = 3; // 最多3轮工具调用
-        for (int round = 0; round < maxRounds; round++) {
-            Response<dev.langchain4j.data.message.AiMessage> response = chatModel.generate(messages, toolSpecifications);
-            dev.langchain4j.data.message.AiMessage aiMessage = response.content();
-
-            // 检查是否有工具调用请求
-            if (!aiMessage.hasToolExecutionRequests()) {
-                return aiMessage.text();
-            }
-
-            // 执行工具调用
-            messages.add(aiMessage);
-            for (ToolExecutionRequest req : aiMessage.toolExecutionRequests()) {
-                String toolResult = executeTool(req.name(), req.arguments());
-                sources.add("工具:" + req.name());
-                messages.add(ToolExecutionResultMessage.from(req, toolResult));
-            }
-        }
-        // 超过最大轮次，最后一次不带工具调用
-        Response<dev.langchain4j.data.message.AiMessage> finalResp = chatModel.generate(messages);
-        return finalResp.content().text();
-    }
-
-    /** 执行工具调用（反射匹配 @Tool 方法） */
-    private String executeTool(String toolName, String argumentsJson) {
-        try {
-            Method[] methods = toolService.getClass().getMethods();
-            for (Method m : methods) {
-                if (m.getName().equals(toolName)) {
-                    // 解析参数
-                    Map<String, Object> args = argumentsJson != null && !argumentsJson.isEmpty()
-                            ? JSONUtil.parseObj(argumentsJson)
-                            : Map.of();
-                    Object[] params = new Object[m.getParameterCount()];
-                    java.lang.reflect.Parameter[] javaParams = m.getParameters();
-                    for (int i = 0; i < javaParams.length; i++) {
-                        Object value = args.get(javaParams[i].getName());
-                        if (value != null) {
-                            // 类型转换
-                            Class<?> type = javaParams[i].getType();
-                            if (type == Integer.class && value instanceof Number n) {
-                                params[i] = n.intValue();
-                            } else {
-                                params[i] = value.toString();
-                            }
-                        } else {
-                            params[i] = null;
-                        }
-                    }
-                    return (String) m.invoke(toolService, params);
-                }
-            }
-            return "工具 " + toolName + " 不存在";
-        } catch (Exception e) {
-            return "工具调用失败: " + e.getMessage();
-        }
     }
 
     private List<KbChunk> searchRelevantChunks(String query) {

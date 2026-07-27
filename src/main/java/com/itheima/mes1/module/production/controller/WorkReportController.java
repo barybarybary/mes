@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.itheima.mes1.common.PageResult;
 import com.itheima.mes1.common.Result;
 import com.itheima.mes1.common.annotation.RequirePermission;
+import com.itheima.mes1.module.base.entity.Equipment;
+import com.itheima.mes1.module.base.mapper.EquipmentMapper;
 import com.itheima.mes1.module.production.entity.WorkOrderProcess;
 import com.itheima.mes1.module.production.entity.WorkReport;
 import com.itheima.mes1.module.production.mapper.WorkOrderProcessMapper;
@@ -23,10 +25,13 @@ public class WorkReportController {
 
     private final ServiceImpl<WorkReportMapper, WorkReport> service;
     private final WorkOrderProcessMapper processMapper;
+    private final EquipmentMapper equipmentMapper;
 
-    public WorkReportController(WorkReportMapper mapper, WorkOrderProcessMapper processMapper) {
+    public WorkReportController(WorkReportMapper mapper, WorkOrderProcessMapper processMapper,
+                                EquipmentMapper equipmentMapper) {
         this.service = new ServiceImpl<>() {{ baseMapper = mapper; }};
         this.processMapper = processMapper;
+        this.equipmentMapper = equipmentMapper;
     }
 
     @RequirePermission("production:report:list")
@@ -85,6 +90,15 @@ public class WorkReportController {
                     wp.setEndTime(java.time.LocalDateTime.now());
                 }
                 processMapper.updateById(wp);
+            }
+        }
+
+        // 报工后更新设备状态为使用中
+        if (report.getEquipmentId() != null) {
+            Equipment eq = equipmentMapper.selectById(report.getEquipmentId());
+            if (eq != null && !"ACTIVE".equals(eq.getStatus()) && !"SCRAPPED".equals(eq.getStatus())) {
+                eq.setStatus("ACTIVE");
+                equipmentMapper.updateById(eq);
             }
         }
         return Result.ok();

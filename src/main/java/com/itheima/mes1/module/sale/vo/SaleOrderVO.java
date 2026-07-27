@@ -20,5 +20,8 @@ public class SaleOrderVO {
     private Long createBy;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
+    private String receiverName;
+    private String receiverPhone;
+    private String receiverAddress;
     private List<SaleOrderItemVO> items;
 }

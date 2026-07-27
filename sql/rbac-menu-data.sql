@@ -35,7 +35,7 @@ INSERT INTO sys_menu (id, parent_id, name, type, path, component, icon, permissi
 (13, 1,  '菜单管理',   2, '/system/menu',        'system/menu/index',        NULL,           'system:menu:list',  109),
 (20, 13, '新增菜单',   3, NULL,                  NULL,                       NULL,           'system:menu:add',   110),
 (21, 13, '编辑菜单',   3, NULL,                  NULL,                       NULL,           'system:menu:edit',  111),
-(22, 13, '删除菜单',   3, NULL,                  NULL,                       NULL,           'system:menu:delete',112);
+(22, 13, '删除菜单',   3, NULL,                  NULL,                       NULL,           'system:menu:delete',112),
 
 -- ============================================
 -- 基础数据 (ID 200-299)
@@ -61,7 +61,17 @@ INSERT INTO sys_menu (id, parent_id, name, type, path, component, icon, permissi
 (213, 200,'仓库管理',   2, '/base/warehouse',    'base/warehouse/index',     NULL,           'base:warehouse:list', 213),
 (214, 213,'新增仓库',   3, NULL,                  NULL,                       NULL,           'base:warehouse:add',  214),
 (215, 213,'编辑仓库',   3, NULL,                  NULL,                       NULL,           'base:warehouse:edit', 215),
-(216, 213,'删除仓库',   3, NULL,                  NULL,                       NULL,           'base:warehouse:delete',216);
+(216, 213,'删除仓库',   3, NULL,                  NULL,                       NULL,           'base:warehouse:delete',216),
+-- 设备
+(217, 200,'设备管理',   2, '/base/equipment',   'base/equipment/index',     NULL,           'base:equipment:list', 217),
+(218, 217,'新增设备',   3, NULL,                  NULL,                       NULL,           'base:equipment:add',  218),
+(219, 217,'编辑设备',   3, NULL,                  NULL,                       NULL,           'base:equipment:edit', 219),
+(220, 217,'删除设备',   3, NULL,                  NULL,                       NULL,           'base:equipment:delete',220),
+-- 供应商
+(221, 200,'供应商管理', 2, '/base/supplier',     'base/supplier/index',      NULL,           'base:supplier:list',  221),
+(222, 221,'新增供应商', 3, NULL,                  NULL,                       NULL,           'base:supplier:add',   222),
+(223, 221,'编辑供应商', 3, NULL,                  NULL,                       NULL,           'base:supplier:edit',  223),
+(224, 221,'删除供应商', 3, NULL,                  NULL,                       NULL,           'base:supplier:delete',224);
 
 -- ============================================
 -- 销售管理 (ID 300-399)
@@ -86,7 +96,8 @@ INSERT INTO sys_menu (id, parent_id, name, type, path, component, icon, permissi
 INSERT INTO sys_menu (id, parent_id, name, type, path, component, icon, permission, sort) VALUES
 (400, 0,  '库存管理',   1, '/inventory',         NULL,                       'Box',          NULL,                    400),
 (401, 400,'库存总览',   2, '/inventory',         'inventory/index',          NULL,           'inventory:list',        401),
-(402, 401,'库存调整',   3, NULL,                  NULL,                       NULL,           'inventory:adjust',      402);
+(402, 401,'库存调整',   3, NULL,                  NULL,                       NULL,           'inventory:adjust',      402),
+(403, 400,'库存流水',   2, '/inventory/transaction','inventory/transaction/index',NULL,        'inventory:transaction:list',403);
 
 -- ============================================
 -- 生产管理 (ID 500-599)
@@ -173,7 +184,7 @@ INSERT INTO sys_role_menu (role_id, menu_id) VALUES
 -- 开发 (role_id=9): 仪表盘 + 系统管理 + 知识库 + AI
 INSERT INTO sys_role_menu (role_id, menu_id) VALUES
 (9,100),(9,101),                         -- 仪表盘
-(9,1),(9,11),(9,12),(9,13),             -- 系统管理(仅查看)
+(9,1),(9,11),(9,12),(9,13),             -- 系统管理(用户+角色+菜单)
 (9,14),(9,15),(9,16),                   -- 用户增删改
 (9,17),(9,18),(9,19),                   -- 角色增删改
 (9,20),(9,21),(9,22),                   -- 菜单增删改

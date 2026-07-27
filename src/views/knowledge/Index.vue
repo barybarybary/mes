@@ -1,9 +1,9 @@
 <template>
-  <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
-    <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div class="px-6 py-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-200">知识库管理</h2>
-        <p class="text-xs text-slate-400 dark:text-slate-300 mt-1">管理文档知识库，支持多种格式上传和自动切片</p>
+        <h2 class="text-lg font-semibold text-slate-800">知识库管理</h2>
+        <p class="text-xs text-slate-400 mt-1">管理文档知识库，支持多种格式上传和自动切片</p>
       </div>
       <div class="flex items-center gap-3">
         <el-select v-model="category" placeholder="全部分类" clearable class="w-36" @change="fetchData">
@@ -20,7 +20,7 @@
           @change="fetchData"
         >
           <template #prefix>
-            <el-icon class="text-slate-400 dark:text-slate-300"><Search /></el-icon>
+            <el-icon class="text-slate-400"><Search /></el-icon>
           </template>
         </el-input>
         <el-upload :show-file-list="false" :http-request="handleUpload" accept=".txt,.md,.pdf,.docx,.xlsx,.csv,.json">
@@ -41,8 +41,8 @@
                 {{ getFileIcon(row.fileType) }}
               </div>
               <div>
-                <div class="font-medium text-slate-700 dark:text-slate-600">{{ row.title }}</div>
-                <div class="text-xs text-slate-400 dark:text-slate-300 mt-0.5">{{ row.fileType?.toUpperCase() }}</div>
+                <div class="font-medium text-slate-700">{{ row.title }}</div>
+                <div class="text-xs text-slate-400 mt-0.5">{{ row.fileType?.toUpperCase() }}</div>
               </div>
             </div>
           </template>
@@ -56,7 +56,7 @@
         </el-table-column>
         <el-table-column prop="chunkCount" label="切片数" width="100" align="center">
           <template #default="{ row }">
-            <span class="font-medium text-slate-600 dark:text-slate-600">{{ row.chunkCount || 0 }}</span>
+            <span class="font-medium text-slate-600">{{ row.chunkCount || 0 }}</span>
           </template>
         </el-table-column>
         <el-table-column label="状态" width="100" align="center">
@@ -70,8 +70,8 @@
         <el-table-column label="操作" width="160" align="center" fixed="right">
           <template #default="{ row }">
             <div class="flex items-center justify-center gap-3">
-              <button class="action-link primary" @click="showChunks(row)">查看切片</button>
-              <button class="action-link danger" @click="del(row.id)">删除</button>
+              <el-button type="primary" @click="showChunks(row)">查看切片</el-button>
+              <el-button type="danger" @click="del(row.id)">删除</el-button>
             </div>
           </template>
         </el-table-column>
@@ -90,16 +90,16 @@
     </div>
 
     <el-dialog v-model="chunkVisible" title="文档切片" width="700px" class="custom-dialog">
-      <p class="text-sm text-slate-500 dark:text-slate-300 mb-4">文档已自动切分为 {{ chunks.length }} 个片段，用于 AI 知识库检索。</p>
+      <p class="text-sm text-slate-500 mb-4">文档已自动切分为 {{ chunks.length }} 个片段，用于 AI 知识库检索。</p>
       <div class="max-h-96 overflow-y-auto space-y-3">
-        <div v-for="(c, i) in chunks" :key="i" class="p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-700 hover:border-sky-200 hover:bg-sky-50/30 transition-all">
+        <div v-for="(c, i) in chunks" :key="i" class="p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-sky-200 hover:bg-sky-50/30 transition-all">
           <div class="flex items-center gap-2 mb-2">
             <span class="inline-flex items-center justify-center w-6 h-6 bg-sky-100 text-sky-600 text-xs font-medium rounded-full">
               {{ c.chunkIndex + 1 }}
             </span>
-            <span class="text-xs text-slate-400 dark:text-slate-300">第 {{ c.chunkIndex + 1 }} 片</span>
+            <span class="text-xs text-slate-400">第 {{ c.chunkIndex + 1 }} 片</span>
           </div>
-          <p class="text-sm text-slate-600 dark:text-slate-600 leading-relaxed">{{ c.content.substring(0, 300) }}{{ c.content.length > 300 ? '...' : '' }}</p>
+          <p class="text-sm text-slate-600 leading-relaxed">{{ c.content.substring(0, 300) }}{{ c.content.length > 300 ? '...' : '' }}</p>
         </div>
       </div>
     </el-dialog>
@@ -181,21 +181,6 @@ onMounted(fetchData)
 </script>
 
 <style scoped>
-.action-link {
-  background: none;
-  border: none;
-  padding: 0;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: color 0.15s;
-  outline: none;
-}
-.action-link.primary { color: #3b82f6; }
-.action-link.primary:hover { color: #1d4ed8; }
-.action-link.danger { color: #f43f5e; }
-.action-link.danger:hover { color: #be123c; }
-
 :deep(.page-table th.el-table__cell) {
   background-color: #f8fafc !important;
   color: #475569 !important;

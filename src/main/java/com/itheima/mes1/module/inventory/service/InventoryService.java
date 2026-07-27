@@ -26,6 +26,10 @@ public class InventoryService {
     private com.itheima.mes1.module.inventory.mapper.StockAlertMapper stockAlertMapper;
     @Autowired
     private com.itheima.mes1.module.base.mapper.ProductMapper productMapper;
+    @Autowired
+    private com.itheima.mes1.module.base.mapper.WarehouseMapper warehouseMapper;
+    @Autowired
+    private com.itheima.mes1.module.system.mapper.SysUserMapper sysUserMapper;
 
     public List<Inventory> listAll() {
         return inventoryMapper.selectAllWithDetail();
@@ -35,12 +39,51 @@ public class InventoryService {
         return inventoryMapper.selectByProduct(productId);
     }
 
+    public Page<Inventory> pageStocks(int page, int pageSize, Long productId) {
+        int offset = (page - 1) * pageSize;
+        List<Inventory> list = inventoryMapper.selectPageWithDetail(offset, pageSize, productId);
+        long total = inventoryMapper.countStocks(productId);
+        Page<Inventory> result = new Page<>(page, pageSize);
+        result.setRecords(list);
+        result.setTotal(total);
+        return result;
+    }
+
     public Page<InventoryTransaction> pageTransactions(int page, int pageSize, Long productId) {
         LambdaQueryWrapper<InventoryTransaction> w = new LambdaQueryWrapper<InventoryTransaction>()
                 .eq(productId != null, InventoryTransaction::getProductId, productId)
                 .orderByDesc(InventoryTransaction::getCreateTime);
         Page<InventoryTransaction> result = transactionMapper.selectPage(new Page<>(page, pageSize), w);
         result.setTotal(transactionMapper.selectCount(w));
+
+        // 批量填充产品名、仓库名、操作人
+        List<InventoryTransaction> records = result.getRecords();
+        if (!records.isEmpty()) {
+            // 产品名
+            List<Long> productIds = records.stream().map(InventoryTransaction::getProductId).filter(java.util.Objects::nonNull).distinct().collect(java.util.stream.Collectors.toList());
+            java.util.Map<Long, String> productNames = new java.util.HashMap<>();
+            if (!productIds.isEmpty()) {
+                productMapper.selectBatchIds(productIds).forEach(p -> productNames.put(p.getId(), p.getName()));
+            }
+            // 仓库名
+            List<Long> warehouseIds = records.stream().map(InventoryTransaction::getWarehouseId).filter(java.util.Objects::nonNull).distinct().collect(java.util.stream.Collectors.toList());
+            java.util.Map<Long, String> warehouseNames = new java.util.HashMap<>();
+            if (!warehouseIds.isEmpty()) {
+                warehouseMapper.selectBatchIds(warehouseIds).forEach(wh -> warehouseNames.put(wh.getId(), wh.getName()));
+            }
+            // 操作人
+            List<Long> userIds = records.stream().map(InventoryTransaction::getCreateBy).filter(java.util.Objects::nonNull).distinct().collect(java.util.stream.Collectors.toList());
+            java.util.Map<Long, String> userNicknames = new java.util.HashMap<>();
+            if (!userIds.isEmpty()) {
+                sysUserMapper.selectBatchIds(userIds).forEach(u -> userNicknames.put(u.getId(), u.getNickname() != null ? u.getNickname() : u.getUsername()));
+            }
+            records.forEach(r -> {
+                r.setProductName(productNames.get(r.getProductId()));
+                r.setWarehouseName(warehouseNames.get(r.getWarehouseId()));
+                if (r.getCreateBy() != null) r.setOperator(userNicknames.get(r.getCreateBy()));
+            });
+        }
+
         return result;
     }
 
@@ -59,8 +102,10 @@ public class InventoryService {
         inventory.setUpdateTime(LocalDateTime.now());
         inventoryMapper.updateById(inventory);
 
-        // 记录流水
-        saveTransaction(productId, warehouseId, batchNo, type, quantity, before, inventory.getQuantity(), orderNo, remark);
+        // 记录流水（使用实际库存记录的 warehouseId，确保 NOT NULL 列有值）
+        saveTransaction(productId,
+                inventory.getWarehouseId() != null ? inventory.getWarehouseId() : warehouseId,
+                batchNo, type, quantity, before, inventory.getQuantity(), orderNo, remark);
     }
 
     /**
@@ -93,13 +138,34 @@ public class InventoryService {
             inv.setQuantity(invQty.subtract(deduct));
             inv.setUpdateTime(LocalDateTime.now());
             inventoryMapper.updateById(inv);
-            saveTransaction(productId, warehouseId, inv.getBatchNo(), type,
+            // 使用实际库存记录的 warehouseId，确保 NOT NULL 列有值
+            saveTransaction(productId,
+                    inv.getWarehouseId() != null ? inv.getWarehouseId() : warehouseId,
+                    inv.getBatchNo(), type,
                     deduct.negate(), before, inv.getQuantity(), orderNo, remark);
             remain = remain.subtract(deduct);
         }
 
         // 出库后检查库存预警
         checkAndAlert(productId);
+    }
+
+    /**
+     * 调拨: 从源仓库出库 → 目标仓库入库
+     */
+    @Transactional
+    public void transfer(Long productId, Long fromWarehouseId, Long toWarehouseId,
+                         String batchNo, BigDecimal quantity, String remark) {
+        if (quantity.compareTo(BigDecimal.ZERO) <= 0) throw new BusinessException("调拨数量必须大于0");
+        if (fromWarehouseId.equals(toWarehouseId)) throw new BusinessException("源仓库和目标仓库不能相同");
+
+        String orderNo = "TRF-" + System.currentTimeMillis();
+
+        // 从源仓库出库
+        stockOut(productId, fromWarehouseId, batchNo, quantity, "transfer", orderNo, remark);
+
+        // 目标仓库入库(不指定库位)
+        stockIn(productId, toWarehouseId, null, batchNo, quantity, "transfer", orderNo, remark);
     }
 
     /** 检查单个产品库存是否低于阈值，如低于且无未处理预警则生成预警 */

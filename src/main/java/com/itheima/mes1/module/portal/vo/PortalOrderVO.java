@@ -19,7 +19,14 @@ public class PortalOrderVO {
     private String deliveryNo;
     private LocalDate deliveryDate;
     private Integer paid;         // 0=未付款 1=已付款
+    private String companyName;     // 公司名称
+    private String contactName;     // 联系人
+    private String phone;           // 联系电话
+    private String address;         // 收货地址
     private List<PortalOrderItemVO> items;
+
+    /** 订单进度时间线 — 每个步骤的标题、描述、时间、状态 */
+    private List<OrderProgressItemVO> progressTimeline;
 
     @Data
     public static class PortalOrderItemVO {

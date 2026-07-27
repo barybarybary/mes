@@ -16,6 +16,26 @@ public interface InventoryMapper extends BaseMapper<Inventory> {
             "WHERE i.quantity > 0 ORDER BY i.update_time DESC")
     List<Inventory> selectAllWithDetail();
 
+    /** 分页查库存（带产品名、仓库名），支持按产品筛选 */
+    @Select("<script>" +
+            "SELECT i.*, p.name as product_name, p.code as product_code, w.name as warehouse_name " +
+            "FROM inventory i LEFT JOIN product p ON i.product_id = p.id LEFT JOIN warehouse w ON i.warehouse_id = w.id " +
+            "WHERE i.quantity &gt; 0 " +
+            "<if test='productId != null'>AND i.product_id = #{productId} </if>" +
+            "ORDER BY i.update_time DESC " +
+            "LIMIT #{offset}, #{limit}" +
+            "</script>")
+    List<Inventory> selectPageWithDetail(@org.apache.ibatis.annotations.Param("offset") int offset,
+                                         @org.apache.ibatis.annotations.Param("limit") int limit,
+                                         @org.apache.ibatis.annotations.Param("productId") Long productId);
+
+    /** 库存总数（带产品筛选） */
+    @Select("<script>" +
+            "SELECT COUNT(*) FROM inventory i WHERE i.quantity &gt; 0 " +
+            "<if test='productId != null'>AND i.product_id = #{productId}</if>" +
+            "</script>")
+    long countStocks(@org.apache.ibatis.annotations.Param("productId") Long productId);
+
     @Select("SELECT i.*, p.name as product_name, p.code as product_code, w.name as warehouse_name " +
             "FROM inventory i LEFT JOIN product p ON i.product_id = p.id LEFT JOIN warehouse w ON i.warehouse_id = w.id " +
             "WHERE i.product_id = #{productId} AND i.quantity > 0 ORDER BY i.update_time DESC")

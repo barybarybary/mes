@@ -1,14 +1,14 @@
 <template>
-  <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
     <!-- 头部 -->
-    <div class="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+    <div class="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
       <div>
-        <h2 class="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-200">产品管理</h2>
-        <p class="text-xs text-slate-400 dark:text-slate-300 mt-0.5 sm:mt-1">管理产品基础信息和物料清单</p>
+        <h2 class="text-base sm:text-lg font-semibold text-slate-800">产品管理</h2>
+        <p class="text-xs text-slate-400 mt-0.5 sm:mt-1">管理产品基础信息和物料清单</p>
       </div>
       <div class="flex items-center gap-2 sm:gap-3">
         <el-input v-model="keyword" placeholder="搜索产品" clearable class="flex-1 sm:w-56" @change="fetchData">
-          <template #prefix><el-icon class="text-slate-400 dark:text-slate-300"><Search /></el-icon></template>
+          <template #prefix><el-icon class="text-slate-400"><Search /></el-icon></template>
         </el-input>
         <el-button type="primary" @click="openDialog()" class="h-10 px-3 sm:px-5 rounded-xl font-medium text-sm shrink-0">
           <el-icon class="sm:mr-1"><Plus /></el-icon><span class="hidden sm:inline">新增产品</span>
@@ -23,7 +23,7 @@
           <template #default="{ row }"><el-tag type="info" effect="light" size="small">{{ row.code }}</el-tag></template>
         </el-table-column>
         <el-table-column prop="name" label="产品名称" min-width="160">
-          <template #default="{ row }"><span class="font-medium text-slate-700 dark:text-slate-600">{{ row.name }}</span></template>
+          <template #default="{ row }"><span class="font-medium text-slate-700">{{ row.name }}</span></template>
         </el-table-column>
         <el-table-column prop="spec" label="规格型号" min-width="150" />
         <el-table-column prop="unit" label="单位" width="80" align="center" />
@@ -33,9 +33,9 @@
         <el-table-column label="操作" width="180" align="center" fixed="right">
           <template #default="{ row }">
             <div class="flex items-center justify-center gap-3">
-              <button class="action-link primary" @click="openDialog(row)">编辑</button>
-              <button class="action-link success" @click="openBomDialog(row)">BOM</button>
-              <button class="action-link danger" @click="del(row.id)">删除</button>
+              <el-button type="primary" @click="openDialog(row)">编辑</el-button>
+              <el-button type="success" @click="openBomDialog(row)">BOM</el-button>
+              <el-button type="danger" @click="del(row.id)">删除</el-button>
             </div>
           </template>
         </el-table-column>
@@ -47,7 +47,7 @@
 
     <!-- 移动端卡片列表 -->
     <div class="p-3 sm:p-4 md:hidden" v-loading="loading">
-      <div v-if="list.length === 0 && !loading" class="text-center py-16 text-slate-400 dark:text-slate-300">
+      <div v-if="list.length === 0 && !loading" class="text-center py-16 text-slate-400">
         <el-icon :size="48" class="mb-3"><Document /></el-icon>
         <p class="text-sm">暂无产品数据</p>
       </div>
@@ -55,7 +55,7 @@
         <div
           v-for="row in list"
           :key="row.id"
-          class="product-card bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 active:bg-slate-50 dark:bg-slate-900 transition-colors"
+          class="product-card bg-white rounded-xl border border-slate-200 p-4 active:bg-slate-50 transition-colors"
         >
           <!-- 顶部：编码标签 + 产品名 -->
           <div class="flex items-start justify-between gap-3 mb-3">
@@ -63,23 +63,23 @@
               <div class="flex items-center gap-2 mb-1">
                 <el-tag type="info" effect="light" size="small">{{ row.code }}</el-tag>
               </div>
-              <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{{ row.name }}</h3>
+              <h3 class="text-sm font-semibold text-slate-800 truncate">{{ row.name }}</h3>
             </div>
             <span class="text-sm font-bold text-emerald-600 whitespace-nowrap shrink-0">¥{{ row.price?.toFixed(2) }}</span>
           </div>
           <!-- 中间：规格 + 单位 -->
-          <div class="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-300 mb-3">
+          <div class="flex items-center gap-4 text-xs text-slate-500 mb-3">
             <span v-if="row.spec" class="inline-flex items-center gap-1">
-              <span class="text-slate-400 dark:text-slate-300">规格</span>
-              <span class="text-slate-600 dark:text-slate-600 font-medium">{{ row.spec }}</span>
+              <span class="text-slate-400">规格</span>
+              <span class="text-slate-600 font-medium">{{ row.spec }}</span>
             </span>
             <span class="inline-flex items-center gap-1">
-              <span class="text-slate-400 dark:text-slate-300">单位</span>
-              <span class="text-slate-600 dark:text-slate-600 font-medium">{{ row.unit }}</span>
+              <span class="text-slate-400">单位</span>
+              <span class="text-slate-600 font-medium">{{ row.unit }}</span>
             </span>
           </div>
           <!-- 底部操作栏 -->
-          <div class="flex items-center gap-2 pt-3 border-t border-slate-100 dark:border-slate-700">
+          <div class="flex items-center gap-2 pt-3 border-t border-slate-100">
             <button class="mobile-action-btn primary" @click="openDialog(row)">
               <el-icon :size="14"><Edit /></el-icon>编辑
             </button>
@@ -132,7 +132,7 @@
       width="750px"
       class="custom-dialog responsive-dialog"
     >
-      <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-300 mb-4">配置该产品的物料组成结构。</p>
+      <p class="text-xs sm:text-sm text-slate-500 mb-4">配置该产品的物料组成结构。</p>
       <!-- 桌面端 BOM 表格 -->
       <div class="hidden sm:block">
         <el-table :data="bomList" border class="page-table">
@@ -144,29 +144,29 @@
             </template>
           </el-table-column>
           <el-table-column label="用量" width="140">
-            <template #default="{ row }"><el-input-number v-model="row.quantity" :min="0" :precision="3" size="small" class="w-full" /></template>
+            <template #default="{ row }"><el-input-number v-model="row.quantity" :min="0" :precision="3" class="w-full" /></template>
           </el-table-column>
           <el-table-column label="单位" width="120">
-            <template #default="{ row }"><el-input v-model="row.unit" size="small" placeholder="单位" /></template>
+            <template #default="{ row }"><el-input v-model="row.unit" placeholder="单位" /></template>
           </el-table-column>
           <el-table-column label="操作" width="80" align="center">
-            <template #default="{ $index }"><button class="action-link danger" @click="bomList.splice($index, 1)">删除</button></template>
+            <template #default="{ $index }"><el-button type="danger" @click="bomList.splice($index, 1)">删除</el-button></template>
           </el-table-column>
         </el-table>
       </div>
       <!-- 移动端 BOM 卡片列表 -->
       <div class="sm:hidden space-y-3">
-        <div v-for="(item, idx) in bomList" :key="idx" class="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 rounded-xl p-3">
+        <div v-for="(item, idx) in bomList" :key="idx" class="flex items-center gap-2 bg-slate-50 rounded-xl p-3">
           <div class="flex-1 min-w-0 space-y-2">
-            <el-select v-model="item.materialId" filterable placeholder="选择物料" size="small" class="w-full">
+            <el-select v-model="item.materialId" filterable placeholder="选择物料" class="w-full">
               <el-option v-for="p in products" :key="p.id" :value="p.id" :label="p.name + ' (' + p.code + ')'" />
             </el-select>
             <div class="flex gap-2">
-              <el-input-number v-model="item.quantity" :min="0" :precision="3" size="small" placeholder="用量" class="flex-1" />
-              <el-input v-model="item.unit" size="small" placeholder="单位" class="w-20" />
+              <el-input-number v-model="item.quantity" :min="0" :precision="3" placeholder="用量" class="flex-1" />
+              <el-input v-model="item.unit" placeholder="单位" class="w-20" />
             </div>
           </div>
-          <button class="action-link danger shrink-0 text-xs" @click="bomList.splice(idx, 1)">删除</button>
+          <el-button type="danger" @click="bomList.splice(idx, 1)">删除</el-button>
         </div>
       </div>
       <el-button class="mt-4 w-full sm:w-auto" @click="bomList.push({ materialId: null, quantity: 1, unit: '个' })">
@@ -266,24 +266,6 @@ onMounted(fetchData)
 </script>
 
 <style scoped>
-/* ===== 操作链接（桌面端表格用） ===== */
-.action-link {
-  background: none;
-  border: none;
-  padding: 0;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: color 0.15s;
-  outline: none;
-}
-.action-link.primary { color: #3b82f6; }
-.action-link.primary:hover { color: #1d4ed8; }
-.action-link.success { color: #10b981; }
-.action-link.success:hover { color: #047857; }
-.action-link.danger { color: #f43f5e; }
-.action-link.danger:hover { color: #be123c; }
-
 /* ===== 移动端卡片 ===== */
 .product-card {
   -webkit-tap-highlight-color: transparent;

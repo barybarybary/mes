@@ -95,6 +95,7 @@ CREATE TABLE product (
     spec VARCHAR(200) COMMENT '规格型号',
     unit VARCHAR(20) COMMENT '单位',
     price DECIMAL(10,2) DEFAULT 0 COMMENT '参考售价',
+    supplier_id BIGINT COMMENT '默认供应商ID',
     image_url VARCHAR(255) COMMENT '图片',
     remark VARCHAR(500) COMMENT '备注',
     status TINYINT DEFAULT 1,
@@ -174,6 +175,39 @@ CREATE TABLE warehouse_location (
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP
 ) COMMENT '库位表';
 
+-- 供应商表
+CREATE TABLE supplier (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(32) NOT NULL COMMENT '供应商编码',
+    name VARCHAR(100) NOT NULL COMMENT '供应商名称',
+    contact VARCHAR(50) COMMENT '联系人',
+    phone VARCHAR(20) COMMENT '电话',
+    address VARCHAR(255) COMMENT '地址',
+    remark VARCHAR(500) COMMENT '备注',
+    status TINYINT DEFAULT 1 COMMENT '0停用 1启用',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_code (code)
+) COMMENT '供应商表';
+
+-- 设备表
+CREATE TABLE equipment (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(32) NOT NULL COMMENT '设备编码',
+    name VARCHAR(100) NOT NULL COMMENT '设备名称',
+    type VARCHAR(50) COMMENT '设备类型',
+    workshop VARCHAR(100) COMMENT '所属车间',
+    line VARCHAR(100) COMMENT '所属产线',
+    status VARCHAR(20) DEFAULT 'ACTIVE' COMMENT 'ACTIVE/IDLE/REPAIR/SCRAPPED',
+    buy_date DATE COMMENT '购置日期',
+    manufacturer VARCHAR(100) COMMENT '制造商',
+    spec VARCHAR(100) COMMENT '规格型号',
+    remark VARCHAR(500) COMMENT '备注',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_code (code)
+) COMMENT '设备表';
+
 -- ============================================
 -- 3. 销售管理模块
 -- ============================================
@@ -187,6 +221,11 @@ CREATE TABLE sale_order (
     delivery_date DATE COMMENT '预计交期',
     status TINYINT DEFAULT 1 COMMENT '1待审核 2已审核 3生产中 4部分发货 5已完成 6已取消',
     total_amount DECIMAL(12,2) DEFAULT 0 COMMENT '订单金额',
+    receiver_name VARCHAR(50) COMMENT '收货人',
+    receiver_phone VARCHAR(20) COMMENT '收货电话',
+    receiver_address VARCHAR(255) COMMENT '收货地址',
+    customer_name VARCHAR(100) COMMENT '客户名称',
+    paid TINYINT DEFAULT 0 COMMENT '0未付款 1已付款',
     remark VARCHAR(500),
     deleted TINYINT DEFAULT 0,
     create_by BIGINT COMMENT '创建人',
@@ -267,6 +306,18 @@ CREATE TABLE inventory_transaction (
     create_by BIGINT,
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP
 ) COMMENT '库存流水';
+
+-- 库存预警
+CREATE TABLE stock_alert (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    product_id BIGINT NOT NULL COMMENT '产品ID',
+    product_name VARCHAR(100) COMMENT '产品名称',
+    current_qty DECIMAL(10,3) COMMENT '当前库存',
+    threshold_qty DECIMAL(10,3) COMMENT '预警阈值',
+    status TINYINT DEFAULT 0 COMMENT '0未处理 1已处理',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    resolve_time DATETIME COMMENT '处理时间'
+) COMMENT '库存预警';
 
 -- ============================================
 -- 5. 生产管理模块
@@ -411,6 +462,26 @@ CREATE TABLE ai_message (
 ) COMMENT 'AI消息';
 
 -- ============================================
+-- 8. 客户门户
+-- ============================================
+
+-- 门户客户
+CREATE TABLE portal_customer (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL COMMENT '用户名',
+    password VARCHAR(200) NOT NULL COMMENT '密码(BCrypt)',
+    company_name VARCHAR(100) COMMENT '公司名称',
+    contact_name VARCHAR(50) COMMENT '联系人',
+    phone VARCHAR(20) COMMENT '电话',
+    email VARCHAR(100) COMMENT '邮箱',
+    address VARCHAR(255) COMMENT '地址',
+    status TINYINT DEFAULT 1 COMMENT '0停用 1启用',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_username (username),
+    UNIQUE KEY uk_email (email)
+) COMMENT '门户客户';
+
+-- ============================================
 -- 初始化数据
 -- ============================================
 
@@ -429,98 +500,34 @@ INSERT INTO sys_role (code, name, description) VALUES
 ('warehouse', '仓管员',   '库存出入库、盘点、调拨、库存预警'),
 ('dev',       '开发',     '系统开发、接口调试、技术文档维护');
 
--- 基础菜单
-INSERT INTO sys_menu (id, parent_id, name, type, path, component, icon, permission, sort) VALUES
-(1, 0, 'System', 1, '/system', NULL, 'Setting', NULL, 100),
-(2, 0, 'Base Data', 1, '/base', NULL, 'Document', NULL, 200),
-(3, 0, 'Sales', 1, '/sale', NULL, 'Sell', NULL, 300),
-(4, 0, 'Inventory', 1, '/inventory', NULL, 'Box', NULL, 400),
-(5, 0, 'Production', 1, '/production', NULL, 'Monitor', NULL, 500),
-(6, 0, 'Knowledge', 1, '/knowledge', NULL, 'Reading', NULL, 600),
-(7, 0, 'AI Assistant', 1, '/ai', NULL, 'ChatDotRound', NULL, 700),
-(8, 0, 'Dashboard', 1, '/dashboard', NULL, 'DataAnalysis', NULL, 800),
-(11, 1, 'User Management', 2, '/system/user', 'system/user/index', NULL, 'system:user:list', 1),
-(12, 1, 'Role Management', 2, '/system/role', 'system/role/index', NULL, 'system:role:list', 2),
-(13, 1, 'Menu Management', 2, '/system/menu', 'system/menu/index', NULL, 'system:menu:list', 3),
-(14, 11, 'User Add', 3, NULL, NULL, NULL, 'system:user:add', 1),
-(15, 11, 'User Edit', 3, NULL, NULL, NULL, 'system:user:edit', 2),
-(16, 11, 'User Delete', 3, NULL, NULL, NULL, 'system:user:delete', 3);
-
--- 管理员拥有所有菜单
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu;
+-- ============================================
+-- 菜单数据请执行 rbac-menu-data.sql（全中文、ID分区统一体系）
+-- 此处仅保留建表 + 种子数据，不再重复维护菜单
+-- ============================================
 
 -- 管理员角色分配
 INSERT INTO sys_user_role (user_id, role_id) VALUES (1, 1);
-
--- ============================================
--- 8. BI 报表模块
--- ============================================
-
--- 定时报表配置
-CREATE TABLE bi_report_config (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) COMMENT '报表名称',
-    type VARCHAR(50) COMMENT '类型: sales/inventory/production',
-    report_format VARCHAR(10) DEFAULT 'excel' COMMENT 'excel/pdf',
-    cron_expr VARCHAR(50) COMMENT 'cron表达式',
-    recipients VARCHAR(500) COMMENT '收件人邮箱(逗号分隔)',
-    status TINYINT DEFAULT 1 COMMENT '0停用 1启用',
-    last_run_time DATETIME,
-    create_time DATETIME DEFAULT CURRENT_TIMESTAMP
-) COMMENT '定时报表配置';
-
--- 告警规则
-CREATE TABLE bi_alert_rule (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) COMMENT '规则名称',
-    category VARCHAR(50) COMMENT '分类: stock/order/quality',
-    metric VARCHAR(50) COMMENT '监控指标',
-    operator VARCHAR(10) COMMENT '比较符: lt/gt/eq',
-    threshold DECIMAL(12,2) COMMENT '阈值',
-    level VARCHAR(20) DEFAULT 'warning' COMMENT 'info/warning/critical',
-    status TINYINT DEFAULT 1,
-    create_time DATETIME DEFAULT CURRENT_TIMESTAMP
-) COMMENT '告警规则';
-
--- 告警记录
-CREATE TABLE bi_alert_record (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    rule_id BIGINT COMMENT '关联规则',
-    category VARCHAR(50) COMMENT '分类: stock/order/quality',
-    title VARCHAR(200) COMMENT '告警标题',
-    content TEXT COMMENT '告警详情',
-    level VARCHAR(20),
-    is_read TINYINT DEFAULT 0,
-    create_time DATETIME DEFAULT CURRENT_TIMESTAMP
-) COMMENT '告警记录';
 
 -- ============================================
 -- 数据库变更: product 表加成本价
 -- ============================================
 ALTER TABLE product ADD COLUMN IF NOT EXISTS cost_price DECIMAL(10,2) DEFAULT 0 COMMENT '参考成本价';
 
--- ============================================
--- 预置告警规则
--- ============================================
-INSERT INTO bi_alert_rule (name, category, metric, operator, threshold, level) VALUES
-('库存低于安全线', 'stock', 'inventory_quantity', 'lt', 10, 'critical'),
-('订单超期未交付', 'order', 'delivery_overdue', 'gt', 0, 'warning'),
-('质检不合格率超标', 'quality', 'qc_ng_rate', 'gt', 5, 'warning');
+-- 数据库变更: sale_order 表加收货信息 + customer_name + paid
+ALTER TABLE sale_order ADD COLUMN IF NOT EXISTS receiver_name VARCHAR(50) COMMENT '收货人';
+ALTER TABLE sale_order ADD COLUMN IF NOT EXISTS receiver_phone VARCHAR(20) COMMENT '收货电话';
+ALTER TABLE sale_order ADD COLUMN IF NOT EXISTS receiver_address VARCHAR(255) COMMENT '收货地址';
+ALTER TABLE sale_order ADD COLUMN IF NOT EXISTS customer_name VARCHAR(100) COMMENT '客户名称';
+ALTER TABLE sale_order ADD COLUMN IF NOT EXISTS paid TINYINT DEFAULT 0 COMMENT '0未付款 1已付款';
 
--- BI 菜单
-INSERT INTO sys_menu (id, parent_id, name, type, path, component, icon, permission, sort) VALUES
-(9, 0, 'BI Reports', 1, '/bi', NULL, 'TrendCharts', NULL, 900),
-(91, 9, 'Overview', 2, '/bi/overview', 'bi/overview/index', NULL, 'bi:view', 1),
-(92, 9, 'Pivot Analysis', 2, '/bi/pivot', 'bi/pivot/index', NULL, 'bi:view', 2),
-(93, 9, 'Alert Center', 2, '/bi/alert', 'bi/alert/index', NULL, 'bi:alert:manage', 3),
-(94, 9, 'Report Export', 2, '/bi/export', 'bi/export/index', NULL, 'bi:export', 4);
-
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE id >= 9 AND id < 100;
+-- 数据库变更: 模块联动 — 质检关联工序、产品关联供应商、报工关联设备
+ALTER TABLE qc_record ADD COLUMN IF NOT EXISTS process_name VARCHAR(100) COMMENT '关联工序名称';
+ALTER TABLE qc_record ADD COLUMN IF NOT EXISTS work_order_process_id BIGINT COMMENT '关联工单工序ID';
+ALTER TABLE product ADD COLUMN IF NOT EXISTS supplier_id BIGINT COMMENT '默认供应商ID';
+ALTER TABLE work_report ADD COLUMN IF NOT EXISTS equipment_id BIGINT COMMENT '使用设备ID';
 
 -- ============================================
--- 9. 操作日志表（审计追踪）
+-- 8. 操作日志表（审计追踪）
 -- ============================================
 CREATE TABLE operation_log (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,

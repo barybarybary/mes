@@ -11,11 +11,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
-import java.util.List;
-
 @Mapper
 public interface SaleOrderMapper extends BaseMapper<SaleOrder> {
-    @Select("SELECT so.*, c.name as customer_name FROM sale_order so LEFT JOIN customer c ON so.customer_id = c.id " +
+    @Select("SELECT so.*, COALESCE(so.customer_name, c.name) as customer_name FROM sale_order so LEFT JOIN customer c ON so.customer_id = c.id " +
             "WHERE so.id = #{id}")
     SaleOrder selectWithCustomer(Long id);
 

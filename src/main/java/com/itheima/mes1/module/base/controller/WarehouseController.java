@@ -56,4 +56,19 @@ public class WarehouseController {
         locationMapper.insert(loc);
         return Result.ok();
     }
+
+    @RequirePermission("base:warehouse:edit")
+    @PutMapping("/locations/{id}")
+    public Result<?> updateLocation(@PathVariable Long id, @RequestBody WarehouseLocation loc) {
+        loc.setId(id);
+        locationMapper.updateById(loc);
+        return Result.ok();
+    }
+
+    @RequirePermission("base:warehouse:delete")
+    @DeleteMapping("/locations/{id}")
+    public Result<?> deleteLocation(@PathVariable Long id) {
+        locationMapper.deleteById(id);
+        return Result.ok();
+    }
 }

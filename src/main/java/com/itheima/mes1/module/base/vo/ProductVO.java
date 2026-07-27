@@ -16,10 +16,14 @@ public class ProductVO {
     private String unit;
     private BigDecimal price;
     private BigDecimal costPrice;
+    private Long supplierId;
+    private String supplierName;
     private String imageUrl;
     private String remark;
     private Integer status;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
+    /** 库存总量 */
+    private Integer stockQuantity;
     private List<com.itheima.mes1.module.base.entity.Bom> bomList;
 }

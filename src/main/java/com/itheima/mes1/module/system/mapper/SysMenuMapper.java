@@ -9,6 +9,6 @@ import java.util.List;
 @Mapper
 public interface SysMenuMapper extends BaseMapper<SysMenu> {
     @Select("SELECT m.* FROM sys_menu m INNER JOIN sys_role_menu rm ON m.id = rm.menu_id " +
-            "INNER JOIN sys_user_role ur ON rm.role_id = ur.role_id WHERE ur.user_id = #{userId} GROUP BY m.id ORDER BY m.sort")
+            "INNER JOIN sys_user_role ur ON rm.role_id = ur.role_id WHERE ur.user_id = #{userId} AND m.visible = 1 GROUP BY m.id ORDER BY m.sort")
     List<SysMenu> selectByUserId(Long userId);
 }

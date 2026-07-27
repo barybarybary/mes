@@ -6,7 +6,7 @@ const api = axios.create({
   timeout: 15000
 })
 
-// 请求拦截 — 使用 portal_token，不和后台 token 冲突
+// 请求拦截 — 读门户 token
 api.interceptors.request.use(config => {
   const token = sessionStorage.getItem('portal_token') || localStorage.getItem('portal_token')
   if (token) {
@@ -28,10 +28,13 @@ api.interceptors.response.use(
   err => {
     ElMessage.error(err.response?.data?.message || '请求失败')
     if (err.response?.status === 401) {
-      // 清除门户 token，跳转门户登录页（不是后台登录页）
       sessionStorage.removeItem('portal_token')
+      sessionStorage.removeItem('portal_customer')
       localStorage.removeItem('portal_token')
-      location.hash = '#/portal/login'
+      localStorage.removeItem('portal_customer')
+      if (location.hash !== '#/portal/login' && location.hash !== '#/portal/register') {
+        location.hash = '#/portal/login'
+      }
     }
     return Promise.reject(err)
   }

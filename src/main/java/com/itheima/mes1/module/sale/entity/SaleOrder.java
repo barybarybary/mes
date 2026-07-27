@@ -29,7 +29,13 @@ public class SaleOrder {
     /** 0=未付款 1=已付款（模拟支付） */
     private Integer paid;
 
-    /** join 结果 — 仅内部使用，API 不暴露 */
-    @TableField(exist = false)
+    /** 创建时写入，避免跨表JOIN */
     private String customerName;
+
+    /** 收货人 */
+    private String receiverName;
+    /** 收货电话 */
+    private String receiverPhone;
+    /** 收货地址 */
+    private String receiverAddress;
 }

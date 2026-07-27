@@ -13,7 +13,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import cn.hutool.core.util.RandomUtil;
+
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 @Service
 public class SaleDeliveryService {
@@ -26,7 +30,8 @@ public class SaleDeliveryService {
 
     public Page<DeliveryVO> page(int page, int pageSize) {
         Page<Delivery> p = new Page<>(page, pageSize);
-        deliveryMapper.selectPage(p, null);
+        deliveryMapper.selectPage(p, new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Delivery>()
+                .orderByDesc(Delivery::getId));
         Page<DeliveryVO> voPage = new Page<>(page, pageSize);
         voPage.setTotal(p.getTotal());
         voPage.setRecords(p.getRecords().stream().map(d -> {
@@ -48,6 +53,9 @@ public class SaleDeliveryService {
 
     @Transactional
     public DeliveryVO create(Delivery delivery) {
+        // 生成发货单号
+        delivery.setDeliveryNo("DL" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
+                + RandomUtil.randomNumbers(4));
         deliveryMapper.insert(delivery);
         if (delivery.getItems() != null) {
             for (DeliveryItem item : delivery.getItems()) {

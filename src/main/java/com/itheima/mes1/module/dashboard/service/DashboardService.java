@@ -361,19 +361,37 @@ public class DashboardService {
         long pendingOrders = workOrderMapper.selectCount(
                 new LambdaQueryWrapper<WorkOrder>().eq(WorkOrder::getStatus, 1));
 
-        // 今日报工汇总
+        // 今日报工汇总（按 report_date 而非 create_time，兼容历史 demo 数据）
         List<com.itheima.mes1.module.production.entity.WorkReport> todayReports =
                 workReportMapper.selectList(
                         new LambdaQueryWrapper<com.itheima.mes1.module.production.entity.WorkReport>()
-                                .ge(com.itheima.mes1.module.production.entity.WorkReport::getCreateTime, todayStart));
+                                .ge(com.itheima.mes1.module.production.entity.WorkReport::getReportDate, today));
         BigDecimal todayOutput = BigDecimal.ZERO;
-        BigDecimal todayDefect = BigDecimal.ZERO;
         for (var r : todayReports) {
             if (r.getQuantity() != null) todayOutput = todayOutput.add(r.getQuantity());
-            if (r.getScrapQty() != null) todayDefect = todayDefect.add(r.getScrapQty());
         }
-        BigDecimal defectRate = todayOutput.compareTo(BigDecimal.ZERO) > 0
-                ? todayDefect.divide(todayOutput, 4, RoundingMode.HALF_UP).multiply(new BigDecimal("100"))
+
+        // 今日不良件数：从质检记录取 ngQty（checkDate = 今日）
+        List<com.itheima.mes1.module.production.entity.QcRecord> todayQcRecords =
+                qcRecordMapper.selectList(
+                        new LambdaQueryWrapper<com.itheima.mes1.module.production.entity.QcRecord>()
+                                .ge(com.itheima.mes1.module.production.entity.QcRecord::getCheckDate, today));
+        BigDecimal todayDefect = BigDecimal.ZERO;
+        for (var qc : todayQcRecords) {
+            if (qc.getNgQty() != null) todayDefect = todayDefect.add(qc.getNgQty());
+        }
+
+        // 累计不良率：从全部质检记录取 ngQty / checkQty * 100（非今日限定）
+        List<com.itheima.mes1.module.production.entity.QcRecord> allQcRecords =
+                qcRecordMapper.selectList(null);
+        BigDecimal totalCheckQty = BigDecimal.ZERO;
+        BigDecimal totalDefectQty = BigDecimal.ZERO;
+        for (var qc : allQcRecords) {
+            if (qc.getCheckQty() != null) totalCheckQty = totalCheckQty.add(qc.getCheckQty());
+            if (qc.getNgQty() != null) totalDefectQty = totalDefectQty.add(qc.getNgQty());
+        }
+        BigDecimal defectRate = totalCheckQty.compareTo(BigDecimal.ZERO) > 0
+                ? totalDefectQty.divide(totalCheckQty, 4, RoundingMode.HALF_UP).multiply(new BigDecimal("100"))
                 : BigDecimal.ZERO;
 
         data.put("inProgressOrders", inProgressOrders);
@@ -425,17 +443,14 @@ public class DashboardService {
                 });
         data.put("defectCauseList", defectCauseList);
 
-        // 产量趋势（最近7天）
+        // 产量趋势（最近7天，按 report_date 查询）
         List<Map<String, Object>> productionTrend = new ArrayList<>();
         for (int i = 6; i >= 0; i--) {
             LocalDate d = today.minusDays(i);
-            LocalDateTime dayStart = d.atStartOfDay();
-            LocalDateTime dayEnd = d.plusDays(1).atStartOfDay();
             List<com.itheima.mes1.module.production.entity.WorkReport> dayReports =
                     workReportMapper.selectList(
                             new LambdaQueryWrapper<com.itheima.mes1.module.production.entity.WorkReport>()
-                                    .ge(com.itheima.mes1.module.production.entity.WorkReport::getCreateTime, dayStart)
-                                    .lt(com.itheima.mes1.module.production.entity.WorkReport::getCreateTime, dayEnd));
+                                    .eq(com.itheima.mes1.module.production.entity.WorkReport::getReportDate, d));
             BigDecimal dayTotal = BigDecimal.ZERO;
             for (var r : dayReports) {
                 if (r.getQuantity() != null) dayTotal = dayTotal.add(r.getQuantity());

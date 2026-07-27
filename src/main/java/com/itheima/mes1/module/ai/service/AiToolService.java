@@ -18,9 +18,6 @@ import dev.langchain4j.agent.tool.Tool;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.itheima.mes1.module.report.entity.ReportRecord;
-import com.itheima.mes1.module.report.service.ReportGenerateService;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -43,7 +40,8 @@ public class AiToolService {
     @Autowired private com.itheima.mes1.module.production.mapper.QcRecordMapper qcRecordMapper;
     @Autowired private com.itheima.mes1.module.knowledge.mapper.KbDocumentMapper kbDocumentMapper;
     @Autowired private com.itheima.mes1.module.base.mapper.BomMapper bomMapper;
-    @Autowired private ReportGenerateService reportGenerateService;
+    @Autowired private com.itheima.mes1.module.base.mapper.SupplierMapper supplierMapper;
+    @Autowired private com.itheima.mes1.module.base.mapper.EquipmentMapper equipmentMapper;
 
     @Tool("按名称或编码模糊查询产品。参数 keyword 为产品名称或编码关键字")
     public String queryProduct(@P("产品名称或编码关键字") String keyword) {
@@ -413,38 +411,125 @@ public class AiToolService {
         return sb.toString();
     }
 
-    @Tool("生成报表并导出为Excel。当用户要求生成报表、导出数据、制作统计报告时调用。" +
-           "reportType: sales(销售报表)/production(生产报表)/inventory(库存报表)/summary(综合报表); " +
-           "timeRange: 本周/本月/上月/近7天/近30天")
-    public String generateReport(
-            @P("报表类型: sales/production/inventory/summary") String reportType,
-            @P("时间范围: 本周/本月/上月/近7天/近30天") String timeRange) {
-        Long userId = com.itheima.mes1.common.util.RequestContextUtil.currentUserId();
-        if (userId == null) return "无法识别用户身份，请先登录。";
-        try {
-            ReportRecord record = reportGenerateService.generate(reportType, timeRange, userId);
-            return String.format("报表已生成！\n类型: %s\n时间: %s\n标题: %s\n[reportId:%d]\n您可以点击下载链接下载Excel文件。",
-                    reportType, timeRange, record.getTitle(), record.getId());
-        } catch (Exception e) {
-            return "报表生成失败: " + e.getMessage();
-        }
+    // ==================== 联动模块工具 (供应商/设备/质检) ====================
+
+    @Tool("查询供应商列表。可按名称模糊搜索，keyword传空字符串列出全部")
+    public String listSuppliers(@P("供应商名称关键字(可选,传空字符串查全部)") String keyword) {
+        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.itheima.mes1.module.base.entity.Supplier> qw
+            = new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
+        if (keyword != null && !keyword.isBlank()) qw.like(com.itheima.mes1.module.base.entity.Supplier::getName, keyword);
+        qw.last("LIMIT 10");
+        var list = supplierMapper.selectList(qw);
+        if (list.isEmpty()) return "未找到供应商。";
+        return "=== 供应商列表 ===\n" + list.stream()
+                .map(s -> String.format("[%s] %s | 联系人:%s | 电话:%s | 地址:%s | 状态:%s",
+                        s.getCode(), s.getName(),
+                        s.getContact() != null ? s.getContact() : "-",
+                        s.getPhone() != null ? s.getPhone() : "-",
+                        s.getAddress() != null ? s.getAddress() : "-",
+                        s.getStatus() != null && s.getStatus() == 1 ? "启用" : "停用"))
+                .collect(Collectors.joining("\n"));
     }
 
-    @Tool("查看当前用户最近生成的报表记录。当用户询问'我的报表'或'之前生成的报表'时调用")
-    public String getMyReports() {
-        Long userId = com.itheima.mes1.common.util.RequestContextUtil.currentUserId();
-        if (userId == null) return "无法识别用户身份，请先登录。";
-        List<ReportRecord> records = reportGenerateService.listByUser(userId, 10);
-        if (records.isEmpty()) return "您还没有生成过报表。可以对我说「生成本月销售报表」来生成第一份报表。";
-        StringBuilder sb = new StringBuilder("=== 您的最近报表 ===\n");
-        for (ReportRecord r : records) {
-            sb.append(String.format("[reportId:%d] %s | 类型:%s | 时间:%s | 生成于:%s\n",
-                    r.getId(), r.getTitle(),
-                    r.getReportType(), r.getTimeRange(),
-                    r.getCreateTime() != null ? r.getCreateTime().toLocalDate().toString() : "-"));
+    @Tool("按供应商名称查询其供应产品。返回该供应商所供应的所有产品列表")
+    public String queryProductsBySupplier(@P("供应商名称关键字") String supplierName) {
+        var suppliers = supplierMapper.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.itheima.mes1.module.base.entity.Supplier>()
+                        .like(com.itheima.mes1.module.base.entity.Supplier::getName, supplierName)
+                        .last("LIMIT 1"));
+        if (suppliers.isEmpty()) return "未找到供应商：「" + supplierName + "」";
+        var supplier = suppliers.get(0);
+        var products = productMapper.selectList(
+                new LambdaQueryWrapper<Product>()
+                        .eq(Product::getSupplierId, supplier.getId())
+                        .eq(Product::getStatus, 1));
+        if (products.isEmpty()) return "供应商 " + supplier.getName() + " 暂无关联产品。";
+        return "=== " + supplier.getName() + " 供应产品 ===\n" + products.stream()
+                .map(p -> String.format("[%s] %s | 规格:%s | 售价:¥%s | 单位:%s",
+                        p.getCode(), p.getName(), p.getSpec() != null ? p.getSpec() : "-",
+                        p.getPrice(), p.getUnit()))
+                .collect(Collectors.joining("\n"));
+    }
+
+    @Tool("查询设备列表及状态。可按名称/车间模糊搜索，keyword传空字符串列出全部")
+    public String listEquipment(@P("设备名称或车间关键字(可选,传空字符串查全部)") String keyword) {
+        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.itheima.mes1.module.base.entity.Equipment> qw
+            = new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
+        if (keyword != null && !keyword.isBlank()) {
+            qw.and(w -> w.like(com.itheima.mes1.module.base.entity.Equipment::getName, keyword)
+                    .or().like(com.itheima.mes1.module.base.entity.Equipment::getWorkshop, keyword));
         }
-        sb.append("\n如需下载，请告诉我 reportId。");
+        qw.orderByAsc(com.itheima.mes1.module.base.entity.Equipment::getWorkshop).last("LIMIT 15");
+        var list = equipmentMapper.selectList(qw);
+        if (list.isEmpty()) return "未找到设备。";
+        return "=== 设备列表 ===\n" + list.stream()
+                .map(e -> String.format("[%s] %s | 车间:%s | 产线:%s | 状态:%s | 制造商:%s",
+                        e.getCode(), e.getName(),
+                        e.getWorkshop() != null ? e.getWorkshop() : "-",
+                        e.getLine() != null ? e.getLine() : "-",
+                        statusLabel(e.getStatus()), e.getManufacturer() != null ? e.getManufacturer() : "-"))
+                .collect(Collectors.joining("\n"));
+    }
+
+    @Tool("查询工单的质检状态。检查指定工单是否已质检、是否合格、有哪些不合格项")
+    public String getWorkOrderQcStatus(@P("工单号,如WO20260726001") String orderNo) {
+        WorkOrder wo = workOrderMapper.selectOne(
+                new LambdaQueryWrapper<WorkOrder>().eq(WorkOrder::getOrderNo, orderNo));
+        if (wo == null) return "未找到工单 " + orderNo;
+        var qcList = qcRecordMapper.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.itheima.mes1.module.production.entity.QcRecord>()
+                        .eq(com.itheima.mes1.module.production.entity.QcRecord::getWorkOrderId, wo.getId())
+                        .orderByDesc(com.itheima.mes1.module.production.entity.QcRecord::getCreateTime));
+        if (qcList.isEmpty()) return String.format("工单 %s 尚未进行质检。工单状态:%s", orderNo, woStatusDesc(wo.getStatus()));
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format("=== 工单 %s 质检报告 ===\n", orderNo));
+        sb.append(String.format("工单状态:%s | 质检次数:%d\n\n", woStatusDesc(wo.getStatus()), qcList.size()));
+        for (var qc : qcList) {
+            String result = qc.getResult() == null ? "未判定" : (qc.getResult() == 1 ? "合格" : "不合格");
+            sb.append(String.format("[%s] 类型:%s | 检验:%s | 合格:%s | 不良:%s | 判定:%s | 日期:%s",
+                    qc.getProcessName() != null ? qc.getProcessName() : "工序",
+                    qc.getType(), qc.getCheckQty(), qc.getOkQty(), qc.getNgQty(),
+                    result, qc.getCheckDate()));
+            if (qc.getNgDescription() != null) sb.append(" | 不良描述:").append(qc.getNgDescription());
+            if (qc.getDisposition() != null) sb.append(" | 处理:").append(qc.getDisposition());
+            sb.append("\n");
+        }
+        boolean passable = qcList.stream().noneMatch(q -> q.getResult() != null && q.getResult() == 0);
+        sb.append(passable ? "\n✅ 质检通过，工单可完工入库。" : "\n❌ 存在不合格项，工单被阻断，需处理后重新质检。");
         return sb.toString();
+    }
+
+    @Tool("查询设备使用记录。返回指定设备最近使用该设备进行报工的记录")
+    public String getEquipmentUsage(@P("设备名称关键字") String equipmentName) {
+        var eqs = equipmentMapper.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.itheima.mes1.module.base.entity.Equipment>()
+                        .like(com.itheima.mes1.module.base.entity.Equipment::getName, equipmentName)
+                        .last("LIMIT 1"));
+        if (eqs.isEmpty()) return "未找到设备：「" + equipmentName + "」";
+        var eq = eqs.get(0);
+        var reports = workReportMapper.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.itheima.mes1.module.production.entity.WorkReport>()
+                        .eq(com.itheima.mes1.module.production.entity.WorkReport::getEquipmentId, eq.getId())
+                        .orderByDesc(com.itheima.mes1.module.production.entity.WorkReport::getCreateTime)
+                        .last("LIMIT 10"));
+        if (reports.isEmpty()) return "设备 " + eq.getName() + " 暂无报工使用记录。";
+        return "=== " + eq.getName() + "(" + eq.getCode() + ") 使用记录 ===\n"
+                + "设备状态:" + statusLabel(eq.getStatus()) + " | 车间:" + eq.getWorkshop() + "\n\n"
+                + reports.stream()
+                        .map(r -> String.format("[%s] 工人:%s | 合格:%s | 报废:%s | 日期:%s",
+                                r.getWorkOrderNo() != null ? r.getWorkOrderNo() : "-",
+                                r.getWorker(), r.getQualifiedQty(), r.getScrapQty(), r.getReportDate()))
+                        .collect(Collectors.joining("\n"));
+    }
+
+    private String statusLabel(String status) {
+        return switch (status != null ? status : "") {
+            case "ACTIVE" -> "使用中";
+            case "IDLE" -> "空闲";
+            case "REPAIR" -> "维修中";
+            case "SCRAPPED" -> "已报废";
+            default -> status != null ? status : "-";
+        };
     }
 
     private String statusDesc(Integer s) {

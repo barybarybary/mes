@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
@@ -31,6 +32,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/api/auth/login",
                         "/api/captcha/**",
                         "/api/register/**",
+                        "/api/password/**",
                         "/api/public/**",
                         "/api/portal/login",
                         "/api/portal/register",
@@ -58,5 +60,11 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/swagger-resources/**",
                         "/webjars/**"
                 );
+    }
+
+    @Override
+    public void addViewControllers(ViewControllerRegistry registry) {
+        // SPA fallback — 非 API / 非静态资源的请求统一转发到 index.html
+        registry.addViewController("/").setViewName("forward:/index.html");
     }
 }

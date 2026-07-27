@@ -1,5 +1,6 @@
 package com.itheima.mes1;
 
+import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
@@ -14,6 +15,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class Mes1Application {
 
     public static void main(String[] args) {
+        // 自动加载项目根目录 .env 文件，使其中的环境变量对 Spring 可用
+        Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
+        dotenv.entries().forEach(e -> System.setProperty(e.getKey(), e.getValue()));
+
         SpringApplication.run(Mes1Application.class, args);
     }
 

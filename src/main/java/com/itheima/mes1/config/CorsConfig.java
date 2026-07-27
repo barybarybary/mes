@@ -34,7 +34,7 @@ public class CorsConfig {
             String origins = System.getenv("CORS_ALLOWED_ORIGINS");
             if (origins == null || origins.isBlank()) {
                 // 默认仅允许本地开发
-                return List.of("http://localhost:8080", "http://localhost:8081", "http://127.0.0.1:8080");
+                return List.of("http://localhost:8080", "http://localhost:8081", "http://localhost:8082", "http://127.0.0.1:8080", "http://127.0.0.1:8082");
             }
             return List.of(origins.split(","));
         }

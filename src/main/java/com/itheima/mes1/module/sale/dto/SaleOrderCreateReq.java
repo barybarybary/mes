@@ -11,5 +11,8 @@ public class SaleOrderCreateReq {
     private LocalDate orderDate;
     private LocalDate deliveryDate;
     private String remark;
+    private String receiverName;
+    private String receiverPhone;
+    private String receiverAddress;
     private List<SaleOrderItemReq> items;
 }

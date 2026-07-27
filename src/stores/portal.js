@@ -1,71 +1,94 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import api from '@/api/portal'
 
+function getStorage() {
+  if (sessionStorage.getItem('portal_token')) return sessionStorage
+  return localStorage
+}
+
 export const usePortalStore = defineStore('portal', () => {
-  // ===== 状态 =====
+  const storage = getStorage()
+  const token = ref(storage.getItem('portal_token') || '')
+  const customer = ref(JSON.parse(storage.getItem('portal_customer') || 'null'))
   const cartCount = ref(0)
-  const customer = ref(null)
 
-  // ===== 计算属性 =====
-  const token = computed(() =>
-    sessionStorage.getItem('portal_token') || localStorage.getItem('portal_token')
-  )
+  // --- Auth ---
 
-  const isLoggedIn = computed(() => !!token.value)
-
-  // ===== 方法 =====
-
-  /** 从 localStorage 恢复用户信息 */
-  function loadCustomer() {
-    try {
-      customer.value = JSON.parse(localStorage.getItem('portal_customer') || 'null')
-    } catch {
-      customer.value = null
-    }
+  async function login(username, password) {
+    const res = await api.post('/login', { username, password })
+    const { token: t, customer: c } = res.data
+    token.value = t
+    customer.value = c
+    sessionStorage.setItem('portal_token', t)
+    sessionStorage.setItem('portal_customer', JSON.stringify(c))
+    await fetchCartCount()
+    return res
   }
 
-  /** 请求后端刷新购物车数量 */
+  async function register(form) {
+    const res = await api.post('/register', form)
+    return res
+  }
+
+  function logout() {
+    token.value = ''
+    customer.value = null
+    cartCount.value = 0
+    sessionStorage.removeItem('portal_token')
+    sessionStorage.removeItem('portal_customer')
+    localStorage.removeItem('portal_token')
+    localStorage.removeItem('portal_customer')
+  }
+
+  // --- Profile ---
+
+  async function fetchCustomer() {
+    const res = await api.get('/profile')
+    customer.value = res.data
+    sessionStorage.setItem('portal_customer', JSON.stringify(res.data))
+    return res.data
+  }
+
+  async function updateProfile(data) {
+    const res = await api.put('/profile', data)
+    customer.value = res.data
+    sessionStorage.setItem('portal_customer', JSON.stringify(res.data))
+    return res
+  }
+
+  async function changePassword(oldPassword, newPassword) {
+    return await api.put('/password', { oldPassword, newPassword })
+  }
+
+  // --- Cart ---
+
   async function fetchCartCount() {
-    if (!token.value) {
-      cartCount.value = 0
-      return
-    }
     try {
       const res = await api.get('/cart')
       const items = res.data || []
-      cartCount.value = items.reduce((s, i) => s + i.quantity, 0)
-    } catch {
-      /* 忽略，可能未登录 */
+      cartCount.value = items.reduce((sum, item) => sum + item.quantity, 0)
+    } catch { /* ignore */
+      cartCount.value = 0
     }
   }
 
-  /** 加购后手动增加角标（乐观更新） */
-  function incrementCart(n) {
-    cartCount.value += n
+  async function addToCart(productId, quantity = 1) {
+    await api.post('/cart/add', null, { params: { productId, quantity } })
+    await fetchCartCount()
   }
 
-  /** 下单/清空后重置 */
-  function resetCart() {
-    cartCount.value = 0
+  return {
+    token,
+    customer,
+    cartCount,
+    login,
+    register,
+    logout,
+    fetchCustomer,
+    updateProfile,
+    changePassword,
+    fetchCartCount,
+    addToCart
   }
-
-  /** 退出登录 */
-  function logout() {
-    sessionStorage.removeItem('portal_token')
-    localStorage.removeItem('portal_token')
-    localStorage.removeItem('portal_customer')
-    customer.value = null
-    cartCount.value = 0
-  }
-
-  /** 保存登录信息 */
-  function saveLogin(tokenVal, customerObj) {
-    sessionStorage.setItem('portal_token', tokenVal)
-    localStorage.setItem('portal_token', tokenVal)
-    localStorage.setItem('portal_customer', JSON.stringify(customerObj))
-    customer.value = customerObj
-  }
-
-  return { cartCount, customer, token, isLoggedIn, loadCustomer, fetchCartCount, incrementCart, resetCart, logout, saveLogin }
 })

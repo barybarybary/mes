@@ -29,6 +29,8 @@ public class SaleOrderService {
     private SaleOrderMapper orderMapper;
     @Autowired
     private SaleOrderItemMapper itemMapper;
+    @Autowired
+    private com.itheima.mes1.module.base.mapper.CustomerMapper customerMapper;
 
     public Page<SaleOrderVO> page(int page, int pageSize, Integer status, String keyword) {
         LambdaQueryWrapper<SaleOrder> w = new LambdaQueryWrapper<SaleOrder>()
@@ -60,9 +62,14 @@ public class SaleOrderService {
     public SaleOrderVO create(SaleOrderCreateReq req) {
         SaleOrder order = new SaleOrder();
         order.setCustomerId(req.getCustomerId());
+        var customer = customerMapper.selectById(req.getCustomerId());
+        order.setCustomerName(customer != null ? customer.getName() : null);
         order.setOrderDate(req.getOrderDate());
         order.setDeliveryDate(req.getDeliveryDate());
         order.setRemark(req.getRemark());
+        order.setReceiverName(req.getReceiverName());
+        order.setReceiverPhone(req.getReceiverPhone());
+        order.setReceiverAddress(req.getReceiverAddress());
         order.setOrderNo("SO" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
                 + RandomUtil.randomNumbers(4));
         order.setStatus(1);

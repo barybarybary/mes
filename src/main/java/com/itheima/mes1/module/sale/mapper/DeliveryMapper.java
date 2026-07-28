@@ -11,14 +11,14 @@ import java.util.List;
 @Mapper
 public interface DeliveryMapper extends BaseMapper<Delivery> {
 
-    @Select("SELECT d.*, c.name as customer_name, so.order_no " +
+    @Select("SELECT d.*, COALESCE(so.customer_name, c.name) as customer_name, so.order_no " +
             "FROM delivery d " +
             "LEFT JOIN customer c ON d.customer_id = c.id " +
             "LEFT JOIN sale_order so ON d.order_id = so.id " +
             "WHERE d.id = #{id}")
     Delivery selectWithDetail(@Param("id") Long id);
 
-    @Select("SELECT d.*, c.name as customer_name, so.order_no " +
+    @Select("SELECT d.*, COALESCE(so.customer_name, c.name) as customer_name, so.order_no " +
             "FROM delivery d " +
             "LEFT JOIN customer c ON d.customer_id = c.id " +
             "LEFT JOIN sale_order so ON d.order_id = so.id " +

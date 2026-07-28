@@ -37,6 +37,9 @@ dist/
 src/main/resources/static/js/
 src/main/resources/static/css/
 
+# === SQL dumps (contain data, not code) ===
+sql/
+
 # === Log files ===
 logs/
 *.gz

@@ -16,7 +16,7 @@
 6. [库存管理业务](#六库存管理业务)
 7. [BOM 与产品管理](#七bom-与产品管理)
 8. [质检管理业务](#八质检管理业务)
-9. [BI 经营分析业务](#九bi-经营分析业务)
+9. [Dashboard 与经营概览](#九dashboard-与经营概览)
 10. [AI 业务助手](#十ai-业务助手)
 11. [考勤管理业务](#十一考勤管理业务)
 12. [知识库业务](#十二知识库业务)
@@ -30,7 +30,7 @@
 18. [HTTP 层与拦截器](#十八http-层与拦截器)
 19. [组件设计模式](#十九组件设计模式)
 20. [ECharts 数据可视化](#二十echarts-数据可视化)
-21. [SSE 实时推送前端](#二十一sse-实时推送前端)
+21. [SSE 实时推送（已移除）](#二十一sse-实时推送已移除保留技术分析)
 22. [主题与暗黑模式](#二十二主题与暗黑模式)
 23. [响应式设计](#二十三响应式设计)
 24. [前端性能优化](#二十四前端性能优化)
@@ -43,7 +43,7 @@
 29. [事务与并发](#二十九事务与并发)
 30. [Redis 缓存](#三十redis-缓存)
 31. [AI 集成](#三十一ai-集成)
-32. [SSE 与定时任务](#三十二sse-与定时任务)
+32. [定时任务](#三十二定时任务)
 33. [异常处理与统一返回](#三十三异常处理与统一返回)
 34. [安全与部署](#三十四安全与部署)
 35. [后端综合分析题](#三十五后端综合分析题)
@@ -78,7 +78,7 @@
 | 订单进度不透明 | 销售订单 → 工单 → 工序流转，全链路状态追踪 |
 | 库存账实不符 | 流水表记录每次变动的 before/after 数量，可审计 |
 | 质量问题难追溯 | 质检记录关联产品 + 工单 + 工序，精准定位 |
-| 工厂经营状况看不清 | Dashboard 6 大 KPI + BI 多维交叉分析 + AI 自然语言问答 |
+| 工厂经营状况看不清 | Dashboard 6 大 KPI 实时监控 + AI 自然语言问答 |
 | 知识随人走 | 知识库文档管理 + AI RAG 检索 |
 | 信息孤岛 | 工贸一体，销售-生产-库存-质检数据打通 |
 
@@ -122,7 +122,7 @@
     └───────────┘     └───────────┘      └───────────┘
          │                 │                  │
     客户 → 销售订单    工单 → 工序流转      Dashboard
-    发货 → 交付签收   报工 → 质检          BI 分析
+    发货 → 交付签收   报工 → 质检          经营看板
                       入库 → 库存           AI 助手
 ```
 
@@ -141,7 +141,7 @@
               发货交付 ──▶ 应收账款
                     │
                     ▼
-              BI 经营分析 ──▶ 管理决策
+              Dashboard 经营看板 ──▶ 管理决策
 ```
 
 ### 2.3 面试追问
@@ -186,7 +186,7 @@
               10. 发货出库（库存减少）──▶ 11. 客户签收
                     │
                     ▼
-              12. 订单完成 ──▶ 13. BI 分析 / 财务结算
+              12. 订单完成 ──▶ 13. 经营分析 / 财务结算
 ```
 
 ### 3.2 数据如何跨模块流动
@@ -202,7 +202,7 @@
 | 入库 | 完工产品 | Inventory 增加, InventoryTransaction (in) | 库存 |
 | 发货 | 销售订单 + 库存 | Delivery, InventoryTransaction (out) | 销售、库存 |
 | 签收 | 发货单 | Delivery (status=3), SaleOrder (status=5) | 销售 |
-| 分析 | 全量数据 | Dashboard KPIs, BI 报表, AI 问答 | BI、AI |
+| 分析 | 全量数据 | Dashboard KPIs + AI 问答 | AI |
 
 ### 3.3 面试追问
 
@@ -536,7 +536,7 @@ QcRecord {
 
 **Q: 质检不合格怎么处理？**
 
-> 1. 不良品隔离（不进入下一工序）2. 判定处理方式：返工/让步接收/报废 3. 分析不良原因（人机料法环）4. BI 告警系统检测到不良率 > 5% 时自动告警。
+> 1. 不良品隔离（不进入下一工序）2. 判定处理方式：返工/让步接收/报废 3. 分析不良原因（人机料法环）4. Dashboard 预警系统检测到不良率 > 5% 时自动告警。
 
 **Q: 为什么要把质检数据数字化？**
 
@@ -544,36 +544,50 @@ QcRecord {
 
 ---
 
-## 九、BI 经营分析业务
+## 九、Dashboard 与经营概览
 
-### 9.1 Dashboard 6 大 KPI 的业务含义
+### 9.1 Dashboard 的定位
 
-| KPI | 计算公式 | 告诉管理者什么 |
+> Dashboard 是管理者打开系统看到的第一屏，目标是一眼看清工厂当前的运行状态。不是报表工具，而是"经营驾驶舱"——KPI 异常时主动告警，正常时无需关注。
+
+### 9.2 6 大 KPI 卡片
+
+| KPI | 计算逻辑 | 告诉管理者什么 |
 |-----|---------|--------------|
-| 待处理订单 | `COUNT(sale_order WHERE status=1)` | 审核积压？需要加人审单？ |
+| 待处理订单 | `COUNT(sale_order WHERE status=1)` | 审单积压？需要催审？ |
 | 生产中工单 | `COUNT(work_order WHERE status=2)` | 车间产能是否饱和？ |
-| 今日入库 | `COUNT(transaction WHERE type='in' AND DATE=today)` | 今天的入库工作量 |
-| 库存 SKU 数 | `COUNT(DISTINCT product_id WHERE qty>0)` | 库存物料种类 |
-| 库存周转天数 | `360 / ((出库量 / 平均库存) × (365 / 周期天数))` | 资金使用效率，越低越好 |
+| 今日入库 | `COUNT(transaction WHERE type='in' AND DATE=today)` | 今天入库工作量 |
+| 库存 SKU 数 | `COUNT(DISTINCT product_id WHERE qty>0)` | 在库物料种类数 |
+| 库存周转天数 | `360 / ((出库量 / 平均库存) × (365 / 周期天数))` | 资金效率，越低越好 |
 | 交付率 | `已完成订单 / 总订单` | 履约能力，越高越好 |
 
-### 9.2 BI 告警 3 大场景
+### 9.3 系统预警
 
-| 告警 | 触发条件 | 业务影响 |
+> Dashboard 不仅展示数据，还主动发现异常。告警统计通过 Dashboard summary 接口一并返回，页面顶部铃铛图标展示未读告警数。
+
+| 告警类型 | 触发条件 | 业务含义 |
 |------|---------|---------|
-| 库存不足 | `quantity < 10` | 可能缺料停产 |
-| 订单超期 | `delivery_date < NOW() AND status NOT IN (5,6)` | 客户满意度下降、可能面临罚款 |
-| 不良率超标 | `ng_rate > 5%` | 过程失控、可能有批量质量问题 |
+| 库存不足 | `quantity < 10` | 缺料风险，可能影响生产 |
+| 订单超期 | `delivery_date < NOW() AND status NOT IN (5,6)` | 客户满意度下降 |
+| 不良率超标 | `ng_rate > 5%` | 过程质量失控 |
 
-### 9.3 面试追问
+### 9.4 面试追问
+
+**Q: Dashboard 的数据是实时的吗？**
+
+> 是的。每个 KPI 通过后端接口实时查询数据库（`/api/dashboard/summary` 等 8 个接口），不做缓存。打开 Dashboard 时前端用 `Promise.all` 并行请求所有图表数据，总耗时 = max(各接口耗时)。
 
 **Q: 库存周转天数从 30 天变成 60 天意味着什么？**
 
-> 变差了。资金压在库存上的时间翻了一倍。可能是：销售预测不准（做太多卖不掉）、采购过量、生产计划不合理。需要分析具体是哪个仓库/哪个产品类别的周转在变差。
+> 变差了。资金压在库存上的时间翻了一倍。可能是：销售预测不准（做太多卖不掉）、采购过量、生产计划不合理。需要进一步分析具体是哪个仓库/哪个产品类别的周转在恶化。
 
 **Q: 交付率下降怎么排查？**
 
-> 1）看 Dashboard 的工单生产进度——是否有大量工单卡在生产中？2）看库存结构——原材料是否缺料导致停产？3）看质检数据——不良率是否上升导致返工耽误交期？4）看具体超期订单——是哪个客户/哪个产品的订单超期最多？
+> 1）看 Dashboard 工单进度——大量工单卡在生产中？2）看库存结构——原材料缺料导致停产？3）看质检数据——不良率上升导致返工耽误交期？4）钻取到具体超期订单——哪个客户/产品的超期最多？
+
+**Q: 为什么用 6 个 KPI 而不是更多？**
+
+> 遵循"管理者一屏看完"原则。6 个指标覆盖了销售（待处理订单）、生产（生产中工单）、库存（入库+SKU数+周转）、交付（交付率）四个关键环节。再多就信息过载了。
 
 ---
 
@@ -662,14 +676,14 @@ QcRecord {
    - 物料端：原材料是否缺料？库存周转是否异常？
    - 质量端：不良率是否上升导致返工？
    - 人员端：关键岗位是否人员不足？
-3. **定位根因** — BI 多维交叉分析（按产品 × 月份 / 按工序 × 产量）
+3. **定位根因** — Dashboard 多维交叉分析（按产品 × 月份 / 按工序 × 产量）
 4. **给出建议** — 瓶颈工序加人/加设备，或调整交期承诺
 
 ### 13.2 "老板说库存太高了要降，你怎么用系统支持这个决策？"
 
 1. **库存结构分析** — Dashboard 按仓库看哪些仓库库存最多
 2. **周转分析** — 哪些产品周转天数最长（滞销品/呆滞料）
-3. **BI 多维分析** — 按产品类别 × 时间看库存趋势
+3. **周转分析** — 按产品类别 × 时间看库存趋势
 4. **建议** — 对周转 > 90 天的产品：暂停采购、促销去库存、或报废处理
 
 ### 13.3 "如果要给这个系统加一个'成本核算'模块，你会怎么设计？"
@@ -737,7 +751,7 @@ src/
     ├── sale/                 # 销售（订单/发货）
     ├── inventory/            # 库存
     ├── production/           # 生产（工单/报工/质检）
-    ├── bi/                   # BI 分析
+
     ├── ai/                   # AI 助手
     ├── knowledge/            # 知识库
     ├── attendance/           # 考勤
@@ -1015,7 +1029,7 @@ api.interceptors.response.use(
 
 **Q: 15 秒超时够吗？哪些接口可能超时？**
 
-> 大部分 CRUD 接口在 1 秒内完成。可能超时的场景：Dashboard 聚合查询（全表扫）、BI 导出（Excel 生成）、文件上传（大文件）。生产环境建议：普通接口 15s，导出类接口 60s，上传类接口 120s。
+> 大部分 CRUD 接口在 1 秒内完成。可能超时的场景：Dashboard 聚合查询（全表扫）、Excel 导出（大批量数据）、文件上传（大文件）。生产环境建议：普通接口 15s，导出类接口 60s，上传类接口 120s。
 
 **Q: 如果 Token 过期了，用户正在填写表单，怎么避免数据丢失？**
 
@@ -1128,23 +1142,23 @@ onMounted(async () => {
 
 ---
 
-## 二十一、SSE 实时推送前端
+## 二十一、SSE 实时推送（已移除，保留技术分析）
 
-### 21.1 实现
+> **注意：** SSE 告警推送随 BI 报表模块一起移除，当前系统无实时推送功能。以下内容作为技术讨论保留，面试中可作为"曾经实现过 SSE"来展示对服务端推送的理解。
+
+### 21.1 原实现
 
 ```javascript
-// Layout/Index.vue
+// Layout/Index.vue — 已移除
 const connectAlertStream = () => {
   const token = sessionStorage.getItem('token') || localStorage.getItem('token')
-  // EventSource 不支持自定义 Header，通过 query param 传 token
-  const sse = new EventSource(`/api/bi/alerts/stream?token=${token}`)
+  const sse = new EventSource(`/api/alerts/stream?token=${token}`)
 
   sse.addEventListener('alertCount', (event) => {
     unreadAlertCount.value = parseInt(event.data)
   })
 
   sse.onerror = () => {
-    // 断线重连在 5 秒后重试
     sse.close()
     setTimeout(connectAlertStream, 5000)
   }
@@ -1438,30 +1452,19 @@ RAG 检索   System Prompt   10 个 @Tool 方法
 
 ---
 
-## 三十二、SSE 与定时任务
+## 三十二、定时任务
 
-### 32.1 SSE 连接管理
+### 32.1 当前定时任务
 
-```java
-// CopyOnWriteArrayList 管理连接池
-private final CopyOnWriteArrayList<SseEmitter> emitters = new CopyOnWriteArrayList<>();
-
-// 广播
-public static void broadcast(int unreadCount) {
-    for (SseEmitter emitter : emitters) {
-        try { emitter.send(SseEmitter.event().name("alertCount").data(unreadCount)); }
-        catch (IOException e) { emitters.remove(emitter); }  // 清理死连接
-    }
-}
-```
+> 系统使用 Spring `@Scheduled` 执行周期性任务，如 Dashboard 数据预聚合、库存预警扫描等。默认单线程池执行。
 
 ### 32.2 面试追问
 
-**Q: CopyOnWriteArrayList 比 ArrayList + synchronized 好在哪里？**
-> 读多写少的场景（连接列表读取频繁、新增/移除偶发），写时复制保证读操作无锁，性能更好。
-
 **Q: 定时任务单线程有什么风险？**
-> `@Scheduled(cron = "0 5 * * * ?")` 和 `@Scheduled(cron = "0 30 * * * ?")` 共用默认的单线程池。报表任务如果执行超过 25 分钟，告警扫描会延迟。
+> `@Scheduled(cron = "0 5 * * * ?")` 和 `@Scheduled(cron = "0 30 * * * ?")` 共用默认的单线程池。一个任务执行过久会阻塞其他任务。解决方案：配置自定义线程池 `@Bean taskScheduler` 指定池大小。
+
+**Q: 分布式环境下定时任务怎么避免重复执行？**
+> 单机部署不存在此问题。多实例部署时需要用分布式锁（如 Redis `SETNX`）或使用 XXL-JOB / Quartz + 分布式调度。
 
 ---
 
@@ -1541,7 +1544,7 @@ public class GlobalExceptionHandler {
 |--------|-----|------|
 | 🔴 高 | 数据库无索引 | 全表扫描，百万级数据时系统不可用 |
 | 🔴 高 | 无乐观锁 | 库存并发扣减可能超卖 |
-| 🔴 高 | 告警规则表是空壳 | bi_alert_rule 的 CRUD 没接入扫描逻辑 |
+| 🔴 高 | 告警规则表是空壳 | alert_rule 的 CRUD 没接入扫描逻辑 |
 | 🟡 中 | v-permission 未使用 | 前端按钮权限没生效 |
 | 🟡 中 | MetaObjectHandler 缺失 | createTime/updateTime 不自动填充 |
 | 🟡 中 | 无分页插件 | MyBatis-Plus 分页功能不工作 |
@@ -1560,9 +1563,9 @@ public class GlobalExceptionHandler {
 
 ### "介绍这个项目"（2 分钟）
 
-> 我做的是一个面向中小型制造企业的工贸一体 MES 系统。业务上覆盖销售接单 → 生产工单 → 库存管理 → 质检 → BI 经营分析的全链路，同时集成了 AI 智能助手，让管理者可以用自然语言查询系统数据。
+> 我做的是一个面向中小型制造企业的工贸一体 MES 系统。业务上覆盖销售接单 → 生产工单 → 库存管理 → 质检 → Dashboard 经营看板的全链路，同时集成了 AI 智能助手，让管理者可以用自然语言查询系统数据。
 >
-> 技术上用了 Spring Boot 3 + MyBatis-Plus + Vue 3 + Element Plus。权限系统是自研的 RBAC 五表模型 + 双拦截器 + 自定义注解，没依赖 Spring Security。AI 那部分用 LangChain4j 集成了 DeepSeek 大模型，通过 10 个 @Tool 方法让 AI 能查实时业务数据。实时告警用 SSE 推送到前端。
+> 技术上用了 Spring Boot 3 + MyBatis-Plus + Vue 3 + Element Plus。权限系统是自研的 RBAC 五表模型 + 双拦截器 + 自定义注解，没依赖 Spring Security。AI 那部分用 LangChain4j 集成了 DeepSeek 大模型，通过 10 个 @Tool 方法让 AI 能查实时业务数据。
 >
 > 我做这个项目最大的收获是理解了制造业的业务逻辑——不只是 CRUD，要理解工单怎么流转、库存怎么用 FIFO 扣减、质检和报工怎么协同。技术上最大的挑战是库存扣减的并发安全和 AI Tool Calling 的参数反射匹配。
 
@@ -1576,7 +1579,7 @@ public class GlobalExceptionHandler {
 
 ### "项目有什么不足？"（30 秒）
 
-> 主要有三点：一是数据库缺少非唯一索引，Dashboard 的聚合查询目前是全表扫描，数据量大的时候会慢。二是告警扫描规则是硬编码的，bi_alert_rule 表有 CRUD 但没真正接入扫描逻辑。三是库存扣减目前的并发保护不够，高并发下可能超卖，需要引入乐观锁。这些问题我都清楚改进方向。
+> 主要有三点：一是数据库缺少非唯一索引，Dashboard 的聚合查询目前是全表扫描，数据量大的时候会慢。二是告警扫描规则是硬编码的，alert_rule 表有 CRUD 但没接入扫描逻辑。三是库存扣减目前的并发保护不够，高并发下可能超卖，需要引入乐观锁。这些问题我都清楚改进方向。
 
 ---
 
@@ -1604,7 +1607,7 @@ public class GlobalExceptionHandler {
 - **权限？** 路由守卫（meta.permission）+ v-permission 指令 + hasPermission 函数
 - **HTTP？** Axios 实例，baseURL=/api，请求拦截器加 Bearer Token，响应拦截器解包+401跳转
 - **图表？** ECharts，Dashboard 8 个图表 Promise.all 并行加载
-- **SSE？** EventSource + query param 传 token + 5 秒自动重连
+- **SSE？** 已移除（随 BI 报表模块下线），原实现：EventSource + query param 传 token + 5 秒自动重连
 - **主题？** 5 套预设（CSS 变量）+ 暗黑模式 + Element Plus 全组件暗色覆盖
 - **响应式？** 768px 断点，桌面表格 ↔ 移动端卡片
 - **构建？** Vue CLI 5（Webpack），devServer 代理 8080 → 8081

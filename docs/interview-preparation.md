@@ -18,9 +18,8 @@
 8. [质检管理业务](#八质检管理业务)
 9. [Dashboard 与经营概览](#九dashboard-与经营概览)
 10. [AI 业务助手](#十ai-业务助手)
-11. [考勤管理业务](#十一考勤管理业务)
-12. [知识库业务](#十二知识库业务)
-13. [业务综合分析题](#十三业务综合分析题)
+11. [知识库业务](#十一知识库业务)
+12. [业务综合分析题](#十二业务综合分析题)
 
 ### 第二部分：前端（~25%）
 14. [Vue 3 架构设计](#十四vue-3-架构设计)
@@ -593,7 +592,7 @@ QcRecord {
 
 ## 十、AI 业务助手
 
-### 10.1 AI 能回答什么业务问题？
+### 10.1 25 个 @Tool 能力矩阵
 
 | 用户问 | AI 调用的工具 | 返回 |
 |--------|------------|------|
@@ -623,29 +622,11 @@ QcRecord {
 
 **Q: AI 查的数据是实时的吗？**
 
-> 是的。每个 `@Tool` 方法直接查数据库（通过 MyBatis-Plus Mapper），返回的是当前最新数据。不是离线分析，不是缓存数据。
+> 是的。25 个 @Tool 方法直接查数据库（通过 MyBatis-Plus Mapper），返回的是当前最新数据。不是离线分析，不是缓存数据。覆盖产品、库存、订单、工单、客户、供应商、设备、BOM、SOP 等领域。
 
 ---
 
-## 十一、考勤管理业务
-
-### 11.1 打卡规则
-
-```
-上班打卡：09:00 前 → 正常
-         09:00 后 → 迟到（lateIn = 1）
-
-下班打卡：18:00 后 → 正常
-         18:00 前 → 早退（earlyOut = 1）
-```
-
-### 11.2 月度视图
-
-每月展示完整日历，标注每天是工作日还是休息日，迟到/早退用红色标记。用于 HR 核算工资、统计出勤率。
-
----
-
-## 十二、知识库业务
+## 十一、知识库业务
 
 ### 12.1 知识库解决什么问题？
 
@@ -661,11 +642,11 @@ QcRecord {
 
 ---
 
-## 十三、业务综合分析题
+## 十二、业务综合分析题
 
 以下是大厂面试中可能出现的业务综合分析题：
 
-### 13.1 "如果订单交付率连续 3 个月下降到 70%，你怎么排查？"
+### 12.1 "如果订单交付率连续 3 个月下降到 70%，你怎么排查？"
 
 **答题框架（MECE 原则）：**
 
@@ -679,14 +660,14 @@ QcRecord {
 3. **定位根因** — Dashboard 多维交叉分析（按产品 × 月份 / 按工序 × 产量）
 4. **给出建议** — 瓶颈工序加人/加设备，或调整交期承诺
 
-### 13.2 "老板说库存太高了要降，你怎么用系统支持这个决策？"
+### 12.2 "老板说库存太高了要降，你怎么用系统支持这个决策？"
 
 1. **库存结构分析** — Dashboard 按仓库看哪些仓库库存最多
 2. **周转分析** — 哪些产品周转天数最长（滞销品/呆滞料）
 3. **周转分析** — 按产品类别 × 时间看库存趋势
 4. **建议** — 对周转 > 90 天的产品：暂停采购、促销去库存、或报废处理
 
-### 13.3 "如果要给这个系统加一个'成本核算'模块，你会怎么设计？"
+### 12.3 "如果要给这个系统加一个'成本核算'模块，你会怎么设计？"
 
 1. **物料成本** — 从采购入库记录取单价（FIFO/加权平均）
 2. **人工成本** — 从工序报工 × 工时费率
@@ -694,7 +675,7 @@ QcRecord {
 4. **成本卷积** — 从 BOM 底层物料向上卷积到成品
 5. **成本分析** — 实际成本 vs 标准成本差异分析
 
-### 13.4 "一个新客户要做非标定制产品，系统怎么支持？"
+### 12.4 "一个新客户要做非标定制产品，系统怎么支持？"
 
 1. 产品管理 → 新增定制产品（非标 SKU，单独编码）
 2. BOM 管理 → 配置定制 BOM（可能和标准产品共用部分物料）
@@ -742,19 +723,23 @@ src/
 ├── styles/tailwind.css       # Tailwind + 自定义组件样式 + 暗黑模式覆盖
 ├── layout/Index.vue          # 主布局（侧边栏 + 顶栏 + 内容区）
 ├── components/
-│   └── SidebarMenu.vue       # 递归菜单组件
-└── views/                    # 28 个页面，按模块组织
+│   ├── SidebarMenu.vue       # 递归菜单组件
+│   ├── PortalHeader.vue      # 门户页头
+│   ├── PortalFooter.vue      # 门户页脚
+│   ├── ProductCard.vue       # 产品卡片
+│   ├── OrderStatusTag.vue    # 订单状态标签
+│   └── HelloWorld.vue
+└── views/                    # 按模块组织
     ├── login/                # 登录/注册/忘记密码
     ├── dashboard/            # 仪表盘
-    ├── system/               # 系统管理（用户/角色/菜单/个人中心/设置）
-    ├── base/                 # 基础数据（产品/工序/客户/仓库）
+    ├── system/               # 系统管理（用户/角色/个人中心/设置）
+    ├── base/                 # 基础数据（产品/工序/客户/仓库/设备/供应商）
     ├── sale/                 # 销售（订单/发货）
-    ├── inventory/            # 库存
-    ├── production/           # 生产（工单/报工/质检）
-
+    ├── inventory/            # 库存（库存列表/流水）
+    ├── production/           # 生产（工单/报工/质检/质检标准/工序SOP）
     ├── ai/                   # AI 助手
     ├── knowledge/            # 知识库
-    ├── attendance/           # 考勤
+    ├── portal/               # 客户门户（首页/产品/购物车/下单等 18 页）
     └── error/                # 403 等错误页
 ```
 
@@ -762,11 +747,11 @@ src/
 
 **Q: 为什么用 `<script setup>` 而不是 Options API？**
 
-> 1. 更少样板代码（不需要 `data()`, `methods`, `computed` 分开写）2. 逻辑复用方便（抽 composable 即可）3. 更好的 TypeScript 类型推断 4. 编译性能更好。
+> 1. 更少样板代码（不需要 `data()`, `methods`, `computed` 分开写）2. 逻辑复用方便（抽 composable 即可）3. 编译性能更好。
 
 **Q: 为什么用 Pinia 而不是 Vuex？**
 
-> Pinia 是 Vuex 5 的替代品：没有 mutations（直接改 state），完全的 TypeScript 支持，不需要嵌套模块（每个 store 独立），API 更简洁。Vue 官方已将 Pinia 列为默认状态管理方案。
+> Pinia 是 Vuex 5 的替代品：没有 mutations（直接改 state），不需要嵌套模块（每个 store 独立），API 更简洁。Vue 官方已将 Pinia 列为默认状态管理方案。当前项目用 Pinia 3 + Composition API（setup 语法）。
 
 **Q: Vue CLI 和 Vite 你倾向哪个？**
 
@@ -861,42 +846,51 @@ router.beforeEach((to, from, next) => {
 
 ## 十六、状态管理 Pinia
 
-### 16.1 唯一的 Store：useUserStore
+### 16.1 Pinia Stores
 
 ```javascript
-// stores/user.js — 管理认证相关的所有状态
+// stores/user.js — 管理后台认证状态
 export const useUserStore = defineStore('user', () => {
-  // State
   const token = ref(getStoredToken())
   const user = ref(parseStored('user'))
   const roles = ref(parseStored('roles'))
-  const menus = ref(parseStored('menus'))
   const permissions = ref(parseStored('permissions'))
 
-  // Actions
   async function login(username, password, captchaKey, captchaAnswer, rememberMe) {
     const res = await api.post('/auth/login', { ... })
-    // 存入 Pinia state
     token.value = res.data.token
-    // 根据 rememberMe 决定存 sessionStorage 还是 localStorage
     const storage = rememberMe ? localStorage : sessionStorage
     storage.setItem('token', token.value)
     // ...
   }
 
   function logout() {
-    // 清除 state + 清除两个 storage
-    // 但保留 remember_me 和 remember_username
+    // 清除 state + storage，保留 remember_me、remember_username
   }
 
-  return { token, user, roles, menus, permissions, login, logout, isRemembered }
+  return { token, user, roles, permissions, login, logout, isRemembered }
+})
+
+// stores/portal.js — 客户门户独立认证
+export const usePortalStore = defineStore('portal', () => {
+  const token = ref(getStoredPortalToken())
+  const customer = ref(parseStored('portal_customer'))
+  const cartCount = ref(0)
+
+  async function login(username, password) { /* /api/portal/login */ }
+  function logout() { /* 清 portal 相关 storage */ }
+  async function fetchCartCount() { /* /api/portal/cart/count */ }
+
+  return { token, customer, cartCount, login, logout, fetchCartCount }
 })
 ```
+
+**两个 Store，双认证体系：** 后台管理用 `userStore`（`/api/auth/login`），客户门户用 `portalStore`（`/api/portal/login`），各自独立 Token 命名空间。
 
 ### 16.2 "记住我"的双 Storage 策略
 
 ```
-勾选"记住我" → token/user/roles/menus/permissions 都存 localStorage（持久化）
+勾选"记住我" → token/user/roles/permissions 存 localStorage（持久化）
 不勾选       → 全部存 sessionStorage（关闭浏览器自动清除）
 登录页回填   → 从 localStorage 读取 remember_me + remember_username
 登出         → 清除两个 storage，但保留 remember_me 和 remember_username
@@ -904,9 +898,9 @@ export const useUserStore = defineStore('user', () => {
 
 ### 16.3 面试追问
 
-**Q: 为什么只有一个 Store？不需要拆成多个吗？**
+**Q: 为什么只有一个 userStore？不需要拆成多个吗？**
 
-> 当前业务简单，认证状态是唯一需要全局共享的状态。如果后续加了购物车、通知、WebSocket 连接管理等复杂状态，就拆成 userStore / cartStore / notificationStore 等。Pinia 没有 modules 的概念，每个 store 是独立的，天然就是拆分的。
+> 当前业务简单，认证状态是唯一需要全局共享的状态。但实际上已有两个 Store：`useUserStore`（后台管理）和 `usePortalStore`（客户门户）。两者独立认证、各自管理。如果后续加了购物车、通知等复杂状态，再拆 notificationStore 等。Pinia 没有 modules 概念，每个 store 独立，天然支持拆分。
 
 **Q: token 为什么存在 sessionStorage/localStorage 而不是 Cookie？**
 
@@ -1063,7 +1057,7 @@ api.interceptors.response.use(
 </template>
 ```
 
-**亮点：** 菜单从后端返回的树形 JSON 递归渲染，不限层级深度。后端控制了菜单结构和权限过滤，前端只负责渲染。
+**亮点：** 菜单树从 `config/menus.js` 前端静态配置中读取，通过用户权限在渲染时过滤。好处是零网络请求、首屏即时渲染，适合菜单结构不频繁变动的后台系统。
 
 ### 19.2 ElTable → 移动端卡片 自适应
 
@@ -1435,14 +1429,15 @@ function applyTheme(theme) {
       ↓
   ┌───┼──────────┐
   ↓   ↓          ↓
-RAG 检索   System Prompt   10 个 @Tool 方法
+RAG 检索   System Prompt   25 个 @Tool 方法
 (知识库)   (DeepSeek)     (实时数据查询)
 ```
 
 ### 31.2 面试追问
 
 **Q: Function Calling 的反射实现有什么坑？**
-> 需要编译参数 `-parameters` 保留方法参数名，否则 LLM 传的参数名和 Java 方法的参数名对不上。如果没有 `-parameters`，需要通过 `@P("参数描述")` 注解来指定参数名。
+
+> `AiToolExecutor` 通过 `ToolSpecifications.toolSpecificationsFrom(toolService)` 反射读取 25 个 @Tool 方法的签名，自动生成 JSON Schema 给 LLM。需要编译参数 `-parameters` 保留方法参数名，否则 LLM 传的参数名和 Java 方法参数名对不上。
 
 **Q: RAG 当前实现有什么问题？**
 > 使用关键词 `contains()` 匹配而非向量相似度搜索。`all-minilm-l6-v2` 依赖已经引入了但没启用。升级到向量检索能显著提升语义匹配效果。
@@ -1454,14 +1449,15 @@ RAG 检索   System Prompt   10 个 @Tool 方法
 
 ## 三十二、定时任务
 
-### 32.1 当前定时任务
+### 32.1 当前状态
 
-> 系统使用 Spring `@Scheduled` 执行周期性任务，如 Dashboard 数据预聚合、库存预警扫描等。默认单线程池执行。
+> `Mes1Application` 上有 `@EnableScheduling` 基础设施，但当前代码中无活跃的 `@Scheduled` 方法。定时任务可按需添加——例如 Dashboard 数据预聚合、库存预警定时扫描等。
 
 ### 32.2 面试追问
 
-**Q: 定时任务单线程有什么风险？**
-> `@Scheduled(cron = "0 5 * * * ?")` 和 `@Scheduled(cron = "0 30 * * * ?")` 共用默认的单线程池。一个任务执行过久会阻塞其他任务。解决方案：配置自定义线程池 `@Bean taskScheduler` 指定池大小。
+**Q: 如果要加定时任务，你会怎么做？**
+
+> 在 Service 方法上加 `@Scheduled(cron = "...")`，配合 `@EnableScheduling` 即可。需要注意：默认单线程池执行所有定时任务，多个任务会排队。建议配置自定义线程池 `@Bean taskScheduler` 避免阻塞。
 
 **Q: 分布式环境下定时任务怎么避免重复执行？**
 > 单机部署不存在此问题。多实例部署时需要用分布式锁（如 Redis `SETNX`）或使用 XXL-JOB / Quartz + 分布式调度。
@@ -1563,9 +1559,9 @@ public class GlobalExceptionHandler {
 
 ### "介绍这个项目"（2 分钟）
 
-> 我做的是一个面向中小型制造企业的工贸一体 MES 系统。业务上覆盖销售接单 → 生产工单 → 库存管理 → 质检 → Dashboard 经营看板的全链路，同时集成了 AI 智能助手，让管理者可以用自然语言查询系统数据。
+> 我做的是一个面向中小型制造企业的工贸一体 MES 系统。业务上覆盖销售接单 → 生产工单 → 库存管理 → 质检 → Dashboard 经营看板的全链路，同时集成了 AI 智能助手（25 个 @Tool 方法），让管理者可以用自然语言查询系统数据。额外还有一个客户门户（Portal），支持客户自助下单、查进度。
 >
-> 技术上用了 Spring Boot 3 + MyBatis-Plus + Vue 3 + Element Plus。权限系统是自研的 RBAC 五表模型 + 双拦截器 + 自定义注解，没依赖 Spring Security。AI 那部分用 LangChain4j 集成了 DeepSeek 大模型，通过 10 个 @Tool 方法让 AI 能查实时业务数据。
+> 技术上用了 Spring Boot 3.4 + MyBatis-Plus 3.5.9 + Vue 3 + Element Plus + Pinia 3。权限系统是自研的 RBAC 五表模型 + 双拦截器 + 自定义注解，没依赖 Spring Security。AI 部分用 LangChain4j 0.36 集成了 DeepSeek（deepseek-v4-pro），通过反射自动生成 Tool Specification。
 >
 > 我做这个项目最大的收获是理解了制造业的业务逻辑——不只是 CRUD，要理解工单怎么流转、库存怎么用 FIFO 扣减、质检和报工怎么协同。技术上最大的挑战是库存扣减的并发安全和 AI Tool Calling 的参数反射匹配。
 
@@ -1596,18 +1592,20 @@ public class GlobalExceptionHandler {
 - **质检类型？** 来料检(IQC) / 过程检(IPQC) / 完工检(FQC)
 - **Dashboard KPI？** 待处理订单 / 生产中工单 / 今日入库 / SKU数 / 库存周转天数 / 交付率
 - **告警场景？** 库存不足(quantity<10) / 订单超期 / 不良率>5%
-- **AI 能干什么？** 查产品、查库存、查订单、查工单、系统健康巡检
+- **AI 能干什么？** 25 个 @Tool：查产品/库存/订单/工单/客户/供应商/设备/BOM/SOP，系统健康巡检
+- **Portal 门户？** 独立客户门户（18 页），支持产品浏览/购物车/下单/查进度，独立认证体系
 
 ### 前端
 
-- **框架？** Vue 3 Composition API + Element Plus + Pinia + ECharts 6 + Tailwind CSS
-- **路由？** Hash 模式（`#/`），懒加载，beforeEach 权限守卫
-- **状态管理？** 单个 Pinia Store（useUserStore），token/user/roles/menus/permissions
+- **框架？** Vue 3 Composition API + Element Plus + Pinia 3 + ECharts 6 + Tailwind CSS
+- **路由？** Hash 模式（`#/`），懒加载，beforeEach 权限守卫，portal 独立路由
+- **状态管理？** 双 Store：useUserStore（token/user/roles/permissions）+ usePortalStore（token/customer/cartCount）
 - **记住我？** localStorage（持久化）vs sessionStorage（会话级）
 - **权限？** 路由守卫（meta.permission）+ v-permission 指令 + hasPermission 函数
+- **菜单？** 前端静态 `config/menus.js`，按用户权限过滤渲染
 - **HTTP？** Axios 实例，baseURL=/api，请求拦截器加 Bearer Token，响应拦截器解包+401跳转
-- **图表？** ECharts，Dashboard 8 个图表 Promise.all 并行加载
-- **SSE？** 已移除（随 BI 报表模块下线），原实现：EventSource + query param 传 token + 5 秒自动重连
+- **图表？** ECharts，Dashboard 14 个端点 Promise.all 并行加载
+- **SSE？** 已移除（随 BI 报表模块下线）
 - **主题？** 5 套预设（CSS 变量）+ 暗黑模式 + Element Plus 全组件暗色覆盖
 - **响应式？** 768px 断点，桌面表格 ↔ 移动端卡片
 - **构建？** Vue CLI 5（Webpack），devServer 代理 8080 → 8081
@@ -1616,16 +1614,19 @@ public class GlobalExceptionHandler {
 
 - **框架？** Spring Boot 3.4.0 + Java 17 + MyBatis-Plus 3.5.9
 - **权限？** 五表 RBAC + AuthInterceptor + PermissionInterceptor + @RequirePermission
-- **认证？** 自研 Token（Redis，24h TTL），非 Spring Security，非 JWT
-- **数据库？** MySQL 8.0 + Druid 连接池（5-20）
-- **缓存？** Redis（Lettuce + GenericJackson2JsonRedisSerializer）
-- **AI？** LangChain4j 0.36 + DeepSeek API + 10 个 @Tool 方法 + 3 轮 Tool Calling
-- **文档？** Knife4j 4.5（OpenAPI 3），中文 UI，/doc.html
+- **认证？** 自研 Token（Redis，24h TTL），非 Spring Security，非 JWT，双命名空间（admin + portal）
+- **数据库？** MySQL 8.0 + Druid 1.2.23（5-20 连接池），35 张表
+- **缓存？** Redis（Lettuce），手动 RedisTemplate 操作，无 @Cacheable
+- **AI？** LangChain4j 0.36 + DeepSeek deepseek-v4-pro + 25 个 @Tool + 3 轮 Tool Calling + 反射生成 ToolSpec
+- **消息队列？** RabbitMQ（默认关闭），邮件/工单/审计 3 个 Exchange
+- **邮件？** Spring Mail + 163 SMTP，异步线程池发送
+- **文档？** Knife4j 4.5（OpenAPI 3），中文 UI，/doc.html，默认关闭
 - **密码？** BCrypt（MD5 兼容迁移）
 - **事务？** @Transactional 默认 REQUIRED，13 个方法
-- **分页？** 插件未配置（KnowledgeService 手动分页）
+- **分页？** PaginationInnerInterceptor 已配置，MP 3.5.9 需手动 setTotal
+- **定时任务？** @EnableScheduling 就绪，无活跃 @Scheduled
 - **索引？** 仅有主键和唯一键（缺非唯一索引）
-- **日志？** 无自定义配置，使用 Spring Boot 默认 Logback
+- **日志？** INFO 级别，输出到 logs/mes1.log（100MB/30天）
 
 ---
 
